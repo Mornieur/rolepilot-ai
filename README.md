@@ -4,7 +4,7 @@ RolePilot AI is an early job-intelligence product foundation. Candidate profiles
 
 ## Current status
 
-The personal/local MVP supports persisted candidate profiles plus target companies configured with a public Greenhouse or Lever board identifier. It does not collect jobs yet. The dashboard displays explicitly labelled mocked job analyses.
+The personal/local MVP supports persisted candidate profiles plus target companies configured with a public Greenhouse or Lever board identifier. Greenhouse companies can request a read-only manual preview of currently published jobs; no jobs are saved. The dashboard displays explicitly labelled mocked job analyses.
 
 ## Stack
 
@@ -45,7 +45,19 @@ Start with `npm run dev`. Use `/profiles` for candidate profiles and `/companies
 - Greenhouse: the token in `boards.greenhouse.io/<identifier>`.
 - Lever: the site identifier in `jobs.lever.co/<identifier>`.
 
-RolePilot stores these identifiers only; it does not call either provider in the current version.
+RolePilot does not call either provider automatically. Greenhouse supports the explicit manual preview described below; Lever remains configuration-only.
+
+## Greenhouse manual preview
+
+RolePilot uses the official public Greenhouse Job Board API endpoint, `GET https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true`. This read-only endpoint requires no API key.
+
+To preview a board:
+
+1. Configure an enabled Greenhouse target company with its board identifier.
+2. Open `/companies` and choose **Preview jobs**.
+3. Request the manual preview and inspect the currently published jobs.
+
+The preview is not persisted, does not trigger automatic monitoring, and does not run candidate matching or AI analysis. Lever preview support is planned, but not implemented.
 
 ## Available scripts
 
@@ -67,7 +79,8 @@ There is no authentication or authorization. This version is intended only as a 
 ## Current limitations
 
 - Candidate profiles and target-company configurations are persisted.
-- Greenhouse and Lever jobs are not fetched yet.
+- Greenhouse supports a manual, read-only preview only; jobs are not persisted.
+- Lever is configured but its connector remains planned.
 - Jobs and job analyses are mocked; AI matching is not implemented.
 - Automatic collection and daily execution are not implemented.
 - Alerts are not implemented. The planned direction is Telegram first, WhatsApp later, and Alexa as an advanced integration.

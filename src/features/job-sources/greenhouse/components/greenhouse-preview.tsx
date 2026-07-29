@@ -1,0 +1,26 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState } from "react";
+
+import { initialGreenhousePreviewState, previewGreenhouseJobsAction, type GreenhousePreviewActionState } from "@/features/job-sources/greenhouse/actions";
+import { shortenPreview } from "@/features/job-sources/greenhouse/description";
+import type { ExternalJobPreview } from "@/features/job-sources/greenhouse/types";
+import type { TargetCompany } from "@/types/domain";
+
+export function GreenhousePreview({ company }: { company: TargetCompany }) {
+  const [state, formAction, pending] = useActionState(previewGreenhouseJobsAction, initialGreenhousePreviewState);
+  const unavailableReason = company.provider !== "greenhouse" ? "Preview is planned for Lever, but is not available yet." : !company.enabled ? "Enable monitoring in company settings before requesting a preview." : null;
+  return <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-8"><div className="mx-auto max-w-5xl"><Link href="/companies" className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300">Back to companies</Link><header className="mt-6 border-b border-slate-200 pb-6"><p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase">RolePilot AI</p><h1 className="mt-3 text-3xl font-semibold tracking-tight">Greenhouse job preview</h1><p className="mt-2 text-slate-600">{company.name} · {company.boardIdentifier}</p><p className="mt-4 rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950">Preview only — these jobs have not been saved to RolePilot.</p></header><section className="mt-8" aria-labelledby="preview-request"><h2 id="preview-request" className="text-xl font-semibold">Manual collection</h2><p className="mt-2 text-sm text-slate-600">Request currently published jobs from the official public Greenhouse Job Board API.</p><form action={formAction} className="mt-4"><input type="hidden" name="companyId" value={company.id} /><button type="submit" disabled={pending || Boolean(unavailableReason)} className="rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60">{pending ? "Requesting preview…" : "Preview jobs"}</button></form>{unavailableReason && <p className="mt-3 text-sm text-amber-800">{unavailableReason}</p>}<PreviewStatus state={state} loading={pending} /></section>{state.status === "success" && state.jobs && <JobList jobs={state.jobs} total={state.total ?? state.jobs.length} skippedJobs={state.skippedJobs ?? 0} requestedAt={state.requestedAt} />}</div></main>;
+}
+
+function PreviewStatus({ state, loading }: { state: GreenhousePreviewActionState; loading: boolean }) {
+  if (loading) return <p role="status" className="mt-3 text-sm text-slate-600">Requesting published jobs from Greenhouse…</p>;
+  if (state.status === "idle") return <p role="status" className="mt-3 text-sm text-slate-500">No preview has been requested yet.</p>;
+  if (state.status === "success") return <p role="status" className="mt-3 text-sm text-emerald-700">Preview received successfully.</p>;
+  if (state.status === "empty") return <p role="status" className="mt-3 text-sm text-slate-600">{state.message}</p>;
+  return <p role="alert" className="mt-3 text-sm text-red-700">{state.message}</p>;
+}
+
+function JobList({ jobs, total, skippedJobs, requestedAt }: { jobs: ExternalJobPreview[]; total: number; skippedJobs: number; requestedAt?: string }) { return <section className="mt-10" aria-labelledby="preview-results"><div className="flex flex-wrap items-baseline justify-between gap-3"><h2 id="preview-results" className="text-xl font-semibold">Published jobs</h2><p className="text-sm text-slate-600">{total} returned{skippedJobs > 0 ? ` · ${skippedJobs} malformed entries excluded` : ""}</p></div>{requestedAt && <p className="mt-2 text-sm text-slate-500">Requested {new Date(requestedAt).toLocaleString()}</p>}<div className="mt-4 space-y-4">{jobs.map((job) => <article key={job.externalId} className="rounded-lg border border-slate-200 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-lg font-semibold">{job.title}</h3><p className="mt-1 text-sm text-slate-600">{[job.location, job.language].filter(Boolean).join(" · ") || "Location not provided"}</p></div><a href={job.originalUrl} target="_blank" rel="noreferrer" className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300">Open original job</a></div>{job.descriptionText && <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">{shortenPreview(job.descriptionText)}</p>}<Metadata label="Departments" values={job.departments} /><Metadata label="Offices" values={job.offices} />{job.sourceUpdatedAt && <p className="mt-3 text-xs text-slate-500">Updated at source: {job.sourceUpdatedAt}</p>}</article>)}</div></section>; }
+function Metadata({ label, values }: { label: string; values: string[] }) { return values.length ? <p className="mt-3 text-sm text-slate-600"><span className="font-medium text-slate-800">{label}:</span> {values.join(", ")}</p> : null; }
