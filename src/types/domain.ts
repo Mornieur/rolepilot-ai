@@ -7,6 +7,12 @@ export type Seniority = (typeof seniorities)[number];
 export const recommendations = ["recommended", "consider", "skipped"] as const;
 export type Recommendation = (typeof recommendations)[number];
 
+export const jobSourceProviders = ["greenhouse", "lever"] as const;
+export type JobSourceProvider = (typeof jobSourceProviders)[number];
+
+export const companyPriorities = ["normal", "high"] as const;
+export type CompanyPriority = (typeof companyPriorities)[number];
+
 export type CandidateProfile = {
   id: string;
   name: string;
@@ -17,6 +23,18 @@ export type CandidateProfile = {
   excludedSkills: string[];
   acceptedWorkModels: WorkModel[];
   locations: string[];
+};
+
+export type TargetCompany = {
+  id: string;
+  name: string;
+  provider: JobSourceProvider;
+  boardIdentifier: string;
+  careersUrl?: string;
+  enabled: boolean;
+  priority: CompanyPriority;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Job = {
