@@ -13,6 +13,7 @@ type DashboardProps = {
   analyses: JobAnalysis[];
   companies?: TargetCompany[];
   companyError?: string | null;
+  persistedJobCount?: number;
 };
 
 const recommendationStyles: Record<Recommendation, string> = {
@@ -21,7 +22,7 @@ const recommendationStyles: Record<Recommendation, string> = {
   skipped: "bg-slate-200 text-slate-700",
 };
 
-export function Dashboard({ profiles, jobs, analyses, companies = [], companyError = null }: DashboardProps) {
+export function Dashboard({ profiles, jobs, analyses, companies = [], companyError = null, persistedJobCount = 0 }: DashboardProps) {
   const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id ?? "");
   const selectedProfile = profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0];
 
@@ -65,6 +66,7 @@ export function Dashboard({ profiles, jobs, analyses, companies = [], companyErr
           <Metric label="Worth considering" value={recommendationCount("consider")} tone="text-amber-800" />
           <Metric label="Skipped" value={recommendationCount("skipped")} tone="text-slate-600" />
         </section>
+        <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5"><div className="flex justify-between gap-4"><div><h2 className="text-lg font-semibold">Collected jobs</h2><p className="mt-1 text-sm text-slate-600">{persistedJobCount} stored source jobs. No AI analysis has been performed.</p></div><Link href="/jobs" className="text-sm font-medium text-blue-700 underline underline-offset-4">Browse jobs</Link></div></section>
 
         <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5" aria-labelledby="company-summary-heading">
           <div className="flex flex-wrap items-baseline justify-between gap-3"><div><h2 id="company-summary-heading" className="text-lg font-semibold">Company monitoring</h2><p className="mt-1 text-sm text-slate-600">Configuration only — job collection is not active yet.</p></div><Link href="/companies" className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300">Manage companies</Link></div>

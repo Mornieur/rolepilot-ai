@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const { previewAction } = vi.hoisted(() => ({ previewAction: vi.fn() }));
-vi.mock("@/features/job-sources/greenhouse/actions", () => ({ initialGreenhousePreviewState: { status: "idle" }, previewGreenhouseJobsAction: previewAction }));
+const { previewAction, saveAction } = vi.hoisted(() => ({ previewAction: vi.fn(), saveAction: vi.fn() }));
+vi.mock("@/features/job-sources/greenhouse/actions", () => ({ initialGreenhousePreviewState: { status: "idle" }, initialGreenhouseCollectionState: { status: "idle" }, previewGreenhouseJobsAction: previewAction, saveGreenhouseJobsAction: saveAction }));
 
 import { GreenhousePreview } from "./greenhouse-preview";
 import type { TargetCompany } from "@/types/domain";

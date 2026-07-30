@@ -57,7 +57,9 @@ To preview a board:
 2. Open `/companies` and choose **Preview jobs**.
 3. Request the manual preview and inspect the currently published jobs.
 
-The preview is not persisted, does not trigger automatic monitoring, and does not run candidate matching or AI analysis. Lever preview support is planned, but not implemented.
+After previewing, choose **Save collected jobs** to re-fetch Greenhouse on the server and persist fresh normalized records. Jobs are deduplicated by provider, target company, and external job ID; repeated unchanged collections update `last_seen_at`, while changed source fields update the stored record. `first_seen_at` remains stable. Browse stored source jobs at `/jobs`.
+
+No automatic collection, closed-job detection, AI matching, notifications, Lever ingestion, or authentication is implemented. Collection history is returned to the current UI only; it is not stored as a separate run record.
 
 ## Available scripts
 

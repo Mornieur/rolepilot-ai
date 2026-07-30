@@ -37,6 +37,25 @@ export type TargetCompany = {
   updatedAt: string;
 };
 
+export type PersistedJob = {
+  id: string;
+  provider: "greenhouse";
+  targetCompanyId: string;
+  externalId: string;
+  title: string;
+  location: string | null;
+  descriptionText: string | null;
+  originalUrl: string;
+  sourceUpdatedAt: string | null;
+  language: string | null;
+  departments: string[];
+  offices: string[];
+  firstSeenAt: string;
+  lastSeenAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Job = {
   id: string;
   externalId: string;

@@ -5,9 +5,13 @@ import { getTargetCompanyById, TargetCompanyDataError } from "@/features/compani
 import { GreenhouseError } from "@/features/job-sources/greenhouse/errors";
 import { fetchGreenhouseJobs } from "@/features/job-sources/greenhouse/client";
 import type { ExternalJobPreview } from "@/features/job-sources/greenhouse/types";
+import { persistCollectedJobs, type JobCollectionResult, PersistedJobDataError } from "@/features/jobs/server/persisted-jobs";
+import { revalidatePath } from "next/cache";
 
 export type GreenhousePreviewActionState = { status: "idle" | "success" | "empty" | "error"; message?: string; jobs?: ExternalJobPreview[]; total?: number; skippedJobs?: number; requestedAt?: string };
 export const initialGreenhousePreviewState: GreenhousePreviewActionState = { status: "idle" };
+export type GreenhouseCollectionActionState = { status: "idle" | "success" | "error"; message?: string; result?: JobCollectionResult };
+export const initialGreenhouseCollectionState: GreenhouseCollectionActionState = { status: "idle" };
 
 export async function previewGreenhouseJobsAction(_: GreenhousePreviewActionState, formData: FormData): Promise<GreenhousePreviewActionState> {
   const id = targetCompanyIdSchema.safeParse(formData.get("companyId"));
@@ -24,5 +28,24 @@ export async function previewGreenhouseJobsAction(_: GreenhousePreviewActionStat
   } catch (error) {
     if (error instanceof GreenhouseError || error instanceof TargetCompanyDataError) return { status: "error", message: error.message };
     return { status: "error", message: "Unable to request a Greenhouse preview. Please try again." };
+  }
+}
+
+export async function saveGreenhouseJobsAction(_: GreenhouseCollectionActionState, formData: FormData): Promise<GreenhouseCollectionActionState> {
+  const id = targetCompanyIdSchema.safeParse(formData.get("companyId"));
+  if (!id.success) return { status: "error", message: "The company could not be identified." };
+  const startedAt = new Date().toISOString();
+  try {
+    const company = await getTargetCompanyById(id.data);
+    if (!company) return { status: "error", message: "The requested company could not be found." };
+    if (!company.enabled) return { status: "error", message: "Enable monitoring for this company before saving jobs." };
+    if (company.provider !== "greenhouse") return { status: "error", message: "Job collection is currently available only for Greenhouse companies." };
+    const preview = await fetchGreenhouseJobs(company);
+    const result = await persistCollectedJobs(company.id, preview.jobs, preview.skippedJobs, startedAt);
+    revalidatePath("/"); revalidatePath("/jobs"); revalidatePath(`/companies/${company.id}/jobs-preview`);
+    return { status: "success", message: "Collected jobs saved.", result };
+  } catch (error) {
+    if (error instanceof GreenhouseError || error instanceof TargetCompanyDataError || error instanceof PersistedJobDataError) return { status: "error", message: error.message };
+    return { status: "error", message: "Unable to save collected jobs. Please try again." };
   }
 }
