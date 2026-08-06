@@ -1,5 +1,16 @@
 # RolePilot AI
 
+## Documentação do projeto
+
+- [Visão do produto](docs/product/PRODUCT_VISION.md)
+- [Estado atual](docs/CURRENT_STATE.md)
+- [Roadmap](docs/product/ROADMAP.md)
+- [Arquitetura](docs/architecture/ARCHITECTURE.md)
+- [Estratégia de IA](docs/architecture/AI_STRATEGY.md)
+- [Política de custo](docs/architecture/COST_POLICY.md)
+- [Workflow](docs/development/WORKFLOW.md)
+- [ADRs](docs/adr/README.md)
+
 RolePilot AI is an early job-intelligence product foundation. Candidate profiles, monitored company configurations, and collected Greenhouse jobs are persisted in Supabase. Compatibility evaluation is performed on demand with explicit, deterministic rules.
 
 ## Current status
@@ -62,11 +73,11 @@ To preview a board:
 
 After previewing, choose **Save collected jobs** to re-fetch Greenhouse on the server and persist fresh normalized records. Jobs are deduplicated by provider, target company, and external job ID; repeated unchanged collections update `last_seen_at`, while changed source fields update the stored record. `first_seen_at` remains stable. Browse stored source jobs at `/jobs`.
 
-No automatic collection, closed-job detection, AI matching, notifications, Lever ingestion, or authentication is implemented. Collection history is returned to the current UI only; it is not stored as a separate run record.
+No automatic collection, closed-job detection, notifications, Lever ingestion, or authentication is implemented. The transitional manual AI analysis is described below. Collection history is returned to the current UI only; it is not stored as a separate run record.
 
 ## Deterministic job evaluation
 
-Open `/jobs/evaluate`, choose a persisted candidate profile, and run the evaluation. This is an on-demand read-only operation: it reads persisted jobs and profiles but does not fetch a board, call OpenAI, or write an evaluation to Supabase.
+Open `/jobs/evaluate`, choose a persisted candidate profile, and run the evaluation. This on-demand read-only evaluation reads persisted jobs and profiles but does not fetch a board or write an evaluation to Supabase.
 
 The existing profile fields are sufficient, so no profile migration was needed:
 
@@ -80,7 +91,7 @@ Searchable source text is normalized case-insensitively, with accents and punctu
 
 ## Manual AI analysis
 
-For one deterministically eligible persisted job, `/jobs/evaluate` can request a manual AI-assisted analysis. The server reloads the profile and job, rechecks eligibility, sends bounded plain-text context, and validates a strict structured response. Analyses are advisory, not persisted, never run automatically, and do not submit an application. Bulk processing, notifications, schedules, agents, RAG, and embeddings are not implemented. Set `OPENAI_API_KEY` server-side; `OPENAI_MODEL` is optional.
+Manual structured AI analysis exists technically, but the current OpenAI runtime is transitional and not approved for live MVP use. Live provider validation is pending; ChatGPT Plus does not fund OpenAI API usage, and MVP setup must not purchase OpenAI credits. The approved next runtime is Gemini Developer API free tier. Deterministic evaluation is implemented; transitional AI interpretation is advisory, manual, non-persistent, and never submits an application.
 
 ## Available scripts
 
@@ -104,12 +115,12 @@ There is no authentication or authorization. This version is intended only as a 
 - Candidate profiles and target-company configurations are persisted.
 - Greenhouse supports manual preview and explicit job persistence; Lever remains configuration-only.
 - Lever is configured but its connector remains planned.
-- Deterministic evaluation is available for persisted Greenhouse jobs; AI matching is not implemented.
+- Deterministic evaluation is available; a transitional manual OpenAI analysis exists but Gemini is the approved future runtime.
 - Automatic collection and daily execution are not implemented.
 - Alerts are not implemented. The planned direction is Telegram first, WhatsApp later, and Alexa as an advanced integration.
 - There is no authentication, user model, or multi-tenancy.
 
 ## Short roadmap
 
-1. Add structured AI analysis for deterministically eligible jobs.
+1. Migrate the transitional OpenAI runtime to Gemini free tier and validate one live analysis.
 2. Add scheduled collection and notification channels.
