@@ -55,4 +55,9 @@ describe("Dashboard", () => {
     expect(screen.getByText("Monitoring enabled").parentElement).toHaveTextContent("1");
     expect(screen.getByText("High priority").parentElement).toHaveTextContent("1");
   });
+
+  it("links to deterministic persisted-job evaluation", () => {
+    render(<Dashboard profiles={profiles} jobs={jobs} analyses={jobAnalyses} />);
+    expect(screen.getByRole("link", { name: "Evaluate collected jobs" })).toHaveAttribute("href", "/jobs/evaluate");
+  });
 });
