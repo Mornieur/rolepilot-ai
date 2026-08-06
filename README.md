@@ -1,10 +1,10 @@
 # RolePilot AI
 
-RolePilot AI is an early job-intelligence product foundation. Candidate profiles and monitored company configurations are persisted in Supabase; jobs and compatibility analyses remain local mock data.
+RolePilot AI is an early job-intelligence product foundation. Candidate profiles, monitored company configurations, and collected Greenhouse jobs are persisted in Supabase. Compatibility evaluation is performed on demand with explicit, deterministic rules.
 
 ## Current status
 
-The personal/local MVP supports persisted candidate profiles plus target companies configured with a public Greenhouse or Lever board identifier. Greenhouse companies can request a read-only manual preview of currently published jobs; no jobs are saved. The dashboard displays explicitly labelled mocked job analyses.
+The personal/local MVP supports persisted candidate profiles plus target companies configured with a public Greenhouse or Lever board identifier. Greenhouse companies can request a read-only manual preview and explicitly save normalized jobs. Stored jobs can then be evaluated against a selected profile without AI or external calls.
 
 ## Stack
 
@@ -35,6 +35,7 @@ Apply the migrations in order through the Supabase SQL editor:
 
 1. `supabase/migrations/202607290001_create_candidate_profiles.sql`
 2. `supabase/migrations/202607290002_create_target_companies.sql`
+3. `supabase/migrations/202607290003_create_jobs.sql`
 
 Then run `supabase/seed.sql` to insert generic example profiles and companies. It is non-destructive and does not reset data.
 
@@ -61,6 +62,20 @@ After previewing, choose **Save collected jobs** to re-fetch Greenhouse on the s
 
 No automatic collection, closed-job detection, AI matching, notifications, Lever ingestion, or authentication is implemented. Collection history is returned to the current UI only; it is not stored as a separate run record.
 
+## Deterministic job evaluation
+
+Open `/jobs/evaluate`, choose a persisted candidate profile, and run the evaluation. This is an on-demand read-only operation: it reads persisted jobs and profiles but does not fetch a board, call OpenAI, or write an evaluation to Supabase.
+
+The existing profile fields are sufficient, so no profile migration was needed:
+
+- desired roles must match the job title when configured;
+- every required skill must match searchable source text;
+- preferred skills add score only;
+- excluded skills reject a job;
+- detected seniority, location, and work model reject a job only when explicitly incompatible. Unknown or absent source data is neutral.
+
+Searchable source text is normalized case-insensitively, with accents and punctuation normalized, across title, description, location, departments, and offices. Seniority is detected from the title only. The page shows the rule reasons and a secondary 0–100 score; eligibility is always decided by the mandatory rules, not the score. Results exist only for the request and are not persisted.
+
 ## Available scripts
 
 - `npm run dev` — start the development server
@@ -81,16 +96,14 @@ There is no authentication or authorization. This version is intended only as a 
 ## Current limitations
 
 - Candidate profiles and target-company configurations are persisted.
-- Greenhouse supports a manual, read-only preview only; jobs are not persisted.
+- Greenhouse supports manual preview and explicit job persistence; Lever remains configuration-only.
 - Lever is configured but its connector remains planned.
-- Jobs and job analyses are mocked; AI matching is not implemented.
+- Deterministic evaluation is available for persisted Greenhouse jobs; AI matching is not implemented.
 - Automatic collection and daily execution are not implemented.
 - Alerts are not implemented. The planned direction is Telegram first, WhatsApp later, and Alexa as an advanced integration.
 - There is no authentication, user model, or multi-tenancy.
 
 ## Short roadmap
 
-1. Add a read-only Greenhouse connector and manual collection preview.
-2. Add deterministic matching and ingestion records.
-3. Add structured AI analysis.
-4. Add scheduled collection and notification channels.
+1. Add structured AI analysis for deterministically eligible jobs.
+2. Add scheduled collection and notification channels.
