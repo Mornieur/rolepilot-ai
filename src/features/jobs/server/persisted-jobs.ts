@@ -12,6 +12,7 @@ const fail = (operation: string): never => { console.error(`Persisted job ${oper
 export type JobCollectionResult = { companyId: string; provider: "greenhouse"; startedAt: string; completedAt: string; discovered: number; created: number; updated: number; unchanged: number; skipped: number; malformed: number; jobs: { externalId: string; title: string; status: CollectionStatus; persistedJobId: string }[] };
 
 export async function listPersistedJobs(): Promise<PersistedJob[]> { const { data, error } = await getSupabaseServerClient().from("jobs").select("*").order("last_seen_at", { ascending: false }); if (error) fail("list"); return (data ?? []).map(toPersistedJob); }
+export async function getPersistedJobById(id: string): Promise<PersistedJob | null> { const { data, error } = await getSupabaseServerClient().from("jobs").select("*").eq("id", id).maybeSingle(); if (error) fail("lookup"); return data ? toPersistedJob(data) : null; }
 export async function listPersistedJobsByCompany(companyId: string): Promise<PersistedJob[]> { const { data, error } = await getSupabaseServerClient().from("jobs").select("*").eq("target_company_id", companyId); if (error) fail("list"); return (data ?? []).map(toPersistedJob); }
 
 export async function persistCollectedJobs(companyId: string, previews: ExternalJobPreview[], malformed: number, startedAt: string): Promise<JobCollectionResult> {

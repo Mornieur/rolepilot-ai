@@ -27,6 +27,8 @@ Set these values in `.env.local` from your Supabase project:
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+OPENAI_MODEL=
 ```
 
 The service-role key is server-only. Do not expose it in browser code or commit `.env.local`.
@@ -75,6 +77,10 @@ The existing profile fields are sufficient, so no profile migration was needed:
 - detected seniority, location, and work model reject a job only when explicitly incompatible. Unknown or absent source data is neutral.
 
 Searchable source text is normalized case-insensitively, with accents and punctuation normalized, across title, description, location, departments, and offices. Seniority is detected from the title only. The page shows the rule reasons and a secondary 0–100 score; eligibility is always decided by the mandatory rules, not the score. Results exist only for the request and are not persisted.
+
+## Manual AI analysis
+
+For one deterministically eligible persisted job, `/jobs/evaluate` can request a manual AI-assisted analysis. The server reloads the profile and job, rechecks eligibility, sends bounded plain-text context, and validates a strict structured response. Analyses are advisory, not persisted, never run automatically, and do not submit an application. Bulk processing, notifications, schedules, agents, RAG, and embeddings are not implemented. Set `OPENAI_API_KEY` server-side; `OPENAI_MODEL` is optional.
 
 ## Available scripts
 
