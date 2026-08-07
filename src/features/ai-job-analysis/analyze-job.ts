@@ -1,5 +1,5 @@
 import "server-only";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { evaluateJob } from "@/features/job-evaluation/evaluate";
 import { getPersistedJobById } from "@/features/jobs/server/persisted-jobs";
 import { getCandidateProfileById } from "@/features/profiles/server/candidate-profiles";
@@ -9,23 +9,25 @@ import { shapeAiJobRequest } from "@/features/ai-job-analysis/request-shaping";
 import { aiJobAnalysisJsonSchema, aiJobAnalysisSchema } from "@/features/ai-job-analysis/schema";
 import type { AiJobAnalysis } from "@/features/ai-job-analysis/types";
 
-const DEFAULT_MODEL = "gpt-5.6-luna";
+const DEFAULT_MODEL = "gemini-2.5-flash-lite";
 export async function analyzeEligibleJob(profileId: string, jobId: string): Promise<AiJobAnalysis> {
-  if (!process.env.OPENAI_API_KEY) throw aiError.configuration();
+  if (!process.env.GEMINI_API_KEY) throw aiError.configuration();
   const [profile, job] = await Promise.all([getCandidateProfileById(profileId), getPersistedJobById(jobId)]);
   if (!profile) throw aiError.profile(); if (!job) throw aiError.job();
   const evaluation = evaluateJob(profile, job); if (!evaluation.eligible) throw aiError.ineligible();
   try {
-    const response = await new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 20_000 }).responses.create({ model: process.env.OPENAI_MODEL || DEFAULT_MODEL, store: false, max_output_tokens: 700, instructions: AI_JOB_ANALYSIS_INSTRUCTIONS, input: JSON.stringify(shapeAiJobRequest(profile, job, evaluation)), text: { format: { type: "json_schema", name: "job_analysis", strict: true, schema: aiJobAnalysisJsonSchema } } });
-    if (response.status === "incomplete") throw aiError.invalid();
-    if (!response.output_text) throw aiError.refused();
-    const parsed = aiJobAnalysisSchema.safeParse(JSON.parse(response.output_text));
+    const response = await new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }).models.generateContent({ model: process.env.GEMINI_MODEL || DEFAULT_MODEL, contents: JSON.stringify(shapeAiJobRequest(profile, job, evaluation)), config: { systemInstruction: AI_JOB_ANALYSIS_INSTRUCTIONS, responseMimeType: "application/json", responseJsonSchema: aiJobAnalysisJsonSchema, maxOutputTokens: 700, abortSignal: AbortSignal.timeout(20_000) } });
+    if (!response.text) throw aiError.refused();
+    let output: unknown;
+    try { output = JSON.parse(response.text); } catch { throw aiError.invalid(); }
+    const parsed = aiJobAnalysisSchema.safeParse(output);
     if (!parsed.success || parsed.data.deterministicAssessment.score !== evaluation.score) throw aiError.invalid();
     return parsed.data;
   } catch (error) {
     if (error instanceof AiJobAnalysisError) throw error;
-    if (error instanceof OpenAI.RateLimitError) throw aiError.rateLimit();
-    if (error instanceof OpenAI.APIConnectionTimeoutError) throw aiError.timeout();
+    if (error instanceof DOMException && error.name === "TimeoutError") throw aiError.timeout();
+    if (typeof error === "object" && error && "status" in error && (error as { status?: number }).status === 429) throw aiError.rateLimit();
+    if (typeof error === "object" && error && "message" in error && /blocked|safety/i.test(String((error as { message?: unknown }).message))) throw aiError.refused();
     throw aiError.unavailable();
   }
 }

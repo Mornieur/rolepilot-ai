@@ -1,3 +1,3 @@
 # ADR-004 — Gemini free tier
 
-Direção de produto: Gemini Developer API gratuita, sem cobrança automática. O código atual ainda usa OpenAI; a migração necessita decisão e implementação explícitas.
+Gemini Developer API gratuita é o runtime, sem cobrança automática ou fallback pago. OpenAI foi removido. Validação live permanece pendente; a camada gratuita pode usar conteúdo conforme a política vigente do provider.

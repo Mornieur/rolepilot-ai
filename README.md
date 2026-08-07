@@ -38,8 +38,8 @@ Set these values in `.env.local` from your Supabase project:
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
-OPENAI_API_KEY=
-OPENAI_MODEL=
+GEMINI_API_KEY=
+GEMINI_MODEL=
 ```
 
 The service-role key is server-only. Do not expose it in browser code or commit `.env.local`.
@@ -91,7 +91,7 @@ Searchable source text is normalized case-insensitively, with accents and punctu
 
 ## Manual AI analysis
 
-Manual structured AI analysis exists technically, but the current OpenAI runtime is transitional and not approved for live MVP use. Live provider validation is pending; ChatGPT Plus does not fund OpenAI API usage, and MVP setup must not purchase OpenAI credits. The approved next runtime is Gemini Developer API free tier. Deterministic evaluation is implemented; transitional AI interpretation is advisory, manual, non-persistent, and never submits an application.
+Manual structured AI analysis uses Gemini Developer API free tier. Live provider validation is pending; ChatGPT Plus does not fund embedded API usage. The analysis is advisory, manual, non-persistent, eligible-only in the current UI, and never submits an application. There is no paid fallback.
 
 ## Available scripts
 
