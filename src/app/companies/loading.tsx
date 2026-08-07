@@ -1,1 +1,0 @@
-export default function CompaniesLoading() { return <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900"><div className="mx-auto max-w-4xl"><p role="status" className="text-sm text-slate-600">Loading monitored companies…</p></div></main>; }
