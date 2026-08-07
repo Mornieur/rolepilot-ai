@@ -1,6 +1,6 @@
 export type ExternalJobPreview = {
   externalId: string;
-  provider: "greenhouse";
+  provider: 'greenhouse';
   companyId: string;
   companyName: string;
   title: string;

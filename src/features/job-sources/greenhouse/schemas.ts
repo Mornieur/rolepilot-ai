@@ -1,6 +1,12 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const greenhouseBoardIdentifierSchema = z.string().trim().min(1, "Enter a Greenhouse board identifier.").max(120, "Board identifier must be 120 characters or fewer.").regex(/^[A-Za-z0-9_-]+$/, "Use only letters, numbers, hyphens, and underscores.").transform((value) => value.toLocaleLowerCase());
+export const greenhouseBoardIdentifierSchema = z
+  .string()
+  .trim()
+  .min(1, 'Enter a Greenhouse board identifier.')
+  .max(120, 'Board identifier must be 120 characters or fewer.')
+  .regex(/^[A-Za-z0-9_-]+$/, 'Use only letters, numbers, hyphens, and underscores.')
+  .transform((value) => value.toLocaleLowerCase());
 
 const nameItemSchema = z.object({ name: z.string() });
 export const greenhouseJobSchema = z.object({

@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
+import { StyledComponentsRegistry } from '@/lib/styled-components-registry';
 
 export const metadata: Metadata = {
-  title: "RolePilot AI | Job intelligence",
-  description: "A focused view of job opportunities for each candidate profile.",
+  title: 'RolePilot AI | Job intelligence',
+  description: 'A focused view of job opportunities for each candidate profile.',
 };
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
+      </body>
     </html>
   );
 }

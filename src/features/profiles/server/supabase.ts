@@ -1,11 +1,15 @@
-import "server-only";
+import 'server-only';
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
-import type { Database } from "@/features/profiles/types/database";
+import type { Database } from '@/features/profiles/types/database';
 
 export class SupabaseConfigurationError extends Error {
-  constructor() { super("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local."); }
+  constructor() {
+    super(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local.',
+    );
+  }
 }
 
 export function getSupabaseServerClient() {
@@ -14,5 +18,7 @@ export function getSupabaseServerClient() {
 
   if (!url || !serviceRoleKey) throw new SupabaseConfigurationError();
 
-  return createClient<Database>(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  return createClient<Database>(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
