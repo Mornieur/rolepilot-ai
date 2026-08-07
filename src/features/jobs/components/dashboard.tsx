@@ -1,14 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
+import { getMockAnalysis } from "@/features/jobs/mock-data";
 import { formatLabel, formatScore } from "@/lib/format";
-import type { CandidateProfile, Job, JobAnalysis, Recommendation } from "@/types/domain";
+import type { CandidateProfile, Job, JobAnalysis, Recommendation, TargetCompany } from "@/types/domain";
 
 type DashboardProps = {
   profiles: CandidateProfile[];
   jobs: Job[];
   analyses: JobAnalysis[];
+  companies?: TargetCompany[];
+  companyError?: string | null;
+  persistedJobCount?: number;
 };
 
 const recommendationStyles: Record<Recommendation, string> = {
@@ -17,7 +22,7 @@ const recommendationStyles: Record<Recommendation, string> = {
   skipped: "bg-slate-200 text-slate-700",
 };
 
-export function Dashboard({ profiles, jobs, analyses }: DashboardProps) {
+export function Dashboard({ profiles, jobs, analyses, companies = [], companyError = null, persistedJobCount = 0 }: DashboardProps) {
   const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id ?? "");
   const selectedProfile = profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0];
 
@@ -25,16 +30,12 @@ export function Dashboard({ profiles, jobs, analyses }: DashboardProps) {
     if (!selectedProfile) return [];
 
     return jobs.flatMap((job) => {
-      const analysis = analyses.find(
-        (item) => item.profileId === selectedProfile.id && item.jobId === job.id,
-      );
+      const analysis = getMockAnalysis(selectedProfile.id, job.id, analyses);
       return analysis ? [{ job, analysis }] : [];
     }).sort((left, right) => right.analysis.score - left.analysis.score);
   }, [analyses, jobs, selectedProfile]);
 
-  if (!selectedProfile) {
-    return null;
-  }
+  if (!selectedProfile) return <EmptyDashboard />;
 
   const recommendationCount = (recommendation: Recommendation) =>
     matchedJobs.filter((item) => item.analysis.recommendation === recommendation).length;
@@ -43,7 +44,7 @@ export function Dashboard({ profiles, jobs, analyses }: DashboardProps) {
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-6xl">
         <header className="border-b border-slate-200 pb-8">
-          <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase">RolePilot AI</p>
+          <div className="flex items-center justify-between gap-4"><p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase">RolePilot AI</p><Link href="/profiles" className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300">Manage profiles</Link></div>
           <div className="mt-4 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Job intelligence for focused decisions.</h1>
@@ -65,11 +66,18 @@ export function Dashboard({ profiles, jobs, analyses }: DashboardProps) {
           <Metric label="Worth considering" value={recommendationCount("consider")} tone="text-amber-800" />
           <Metric label="Skipped" value={recommendationCount("skipped")} tone="text-slate-600" />
         </section>
+        <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5"><div className="flex justify-between gap-4"><div><h2 className="text-lg font-semibold">Collected jobs</h2><p className="mt-1 text-sm text-slate-600">{persistedJobCount} stored source jobs. No AI analysis has been performed.</p></div><Link href="/jobs" className="text-sm font-medium text-blue-700 underline underline-offset-4">Browse jobs</Link></div></section>
+        <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold">Deterministic filtering</h2><p className="mt-1 text-sm text-slate-600">Evaluate collected jobs with explicit rule-based profile preferences — no AI.</p><Link href="/jobs/evaluate" className="mt-3 inline-block text-sm font-medium text-blue-700 underline">Evaluate collected jobs</Link></section>
+
+        <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5" aria-labelledby="company-summary-heading">
+          <div className="flex flex-wrap items-baseline justify-between gap-3"><div><h2 id="company-summary-heading" className="text-lg font-semibold">Company monitoring</h2><p className="mt-1 text-sm text-slate-600">Configuration only — job collection is not active yet.</p></div><Link href="/companies" className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300">Manage companies</Link></div>
+          {companyError ? <p className="mt-4 text-sm text-red-700">Company configuration unavailable: {companyError}</p> : <dl className="mt-4 grid gap-3 sm:grid-cols-3"><Metric label="Monitored companies" value={companies.length} /><Metric label="Monitoring enabled" value={companies.filter((company) => company.enabled).length} tone="text-emerald-800" /><Metric label="High priority" value={companies.filter((company) => company.priority === "high").length} tone="text-amber-800" /></dl>}
+        </section>
 
         <section aria-labelledby="opportunities-heading">
           <div className="mb-4 flex items-baseline justify-between gap-4">
             <h2 id="opportunities-heading" className="text-xl font-semibold">Opportunities</h2>
-            <p className="text-sm text-slate-500">Mocked data</p>
+            <p className="text-sm text-slate-500">Mocked job analyses</p>
           </div>
           <div className="space-y-4">
             {matchedJobs.map(({ job, analysis }) => <JobCard key={job.id} job={job} analysis={analysis} />)}
@@ -80,8 +88,12 @@ export function Dashboard({ profiles, jobs, analyses }: DashboardProps) {
   );
 }
 
+function EmptyDashboard() {
+  return <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900"><div className="mx-auto max-w-xl rounded-lg border border-slate-200 bg-white p-6"><p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase">RolePilot AI</p><h1 className="mt-3 text-2xl font-semibold">Create your first candidate profile</h1><p className="mt-3 text-slate-600">The dashboard will show opportunities once at least one persisted profile exists.</p><Link href="/profiles" className="mt-5 inline-block font-medium text-blue-700 underline underline-offset-4">Manage candidate profiles</Link></div></main>;
+}
+
 function Metric({ label, value, tone = "text-slate-900" }: { label: string; value: number; tone?: string }) {
-  return <div className="rounded-lg border border-slate-200 bg-white p-5"><dt className="text-sm text-slate-600">{label}</dt><dd className={`mt-2 text-3xl font-semibold ${tone}`}>{value}</dd></div>;
+  return <div className="rounded-lg border border-slate-200 bg-white p-5"><p className="text-sm text-slate-600">{label}</p><p className={`mt-2 text-3xl font-semibold ${tone}`}>{value}</p></div>;
 }
 
 function JobCard({ job, analysis }: { job: Job; analysis: JobAnalysis }) {

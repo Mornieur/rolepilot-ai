@@ -1,9 +1,9 @@
-import type { CandidateProfile, Job, JobAnalysis } from "@/types/domain";
+import type { Job, JobAnalysis } from "@/types/domain";
 
-export const profiles: CandidateProfile[] = [
-  { id: "maya-frontend", name: "Maya Chen", desiredRoles: ["Frontend Engineer", "React Engineer"], acceptedSeniorities: ["senior", "staff"], requiredSkills: ["React", "TypeScript"], preferredSkills: ["Next.js", "Accessibility", "Design systems"], excludedSkills: ["PHP"], acceptedWorkModels: ["remote", "hybrid"], locations: ["Brazil", "United States"] },
-  { id: "rafael-data", name: "Rafael Silva", desiredRoles: ["Data Analyst", "Business Intelligence Analyst"], acceptedSeniorities: ["mid", "senior"], requiredSkills: ["SQL", "Python"], preferredSkills: ["Power BI", "dbt", "Product analytics"], excludedSkills: ["Cold outreach"], acceptedWorkModels: ["remote", "hybrid"], locations: ["Brazil"] },
-];
+export const mockProfileIds = {
+  frontend: "11111111-1111-4111-8111-111111111111",
+  data: "22222222-2222-4222-8222-222222222222",
+} as const;
 
 export const jobs: Job[] = [
   { id: "atlas-frontend", externalId: "AT-204", source: "Atlas Careers", title: "Senior Frontend Engineer", company: "Atlas", location: "Remote — Americas", workModel: "remote", seniority: "senior", description: "Build accessible workflow tools with React and TypeScript.", originalUrl: null, publishedAt: "2026-07-28T09:00:00Z", collectedAt: "2026-07-29T08:00:00Z" },
@@ -13,15 +13,27 @@ export const jobs: Job[] = [
   { id: "legacy-php", externalId: "LG-67", source: "Legacy Works", title: "PHP Platform Engineer", company: "Legacy Works", location: "São Paulo, Brazil", workModel: "on-site", seniority: "senior", description: "Maintain and extend a PHP platform onsite.", originalUrl: null, publishedAt: "2026-07-24T10:00:00Z", collectedAt: "2026-07-29T08:00:00Z" },
 ];
 
-export const jobAnalyses: JobAnalysis[] = [
-  { profileId: "maya-frontend", jobId: "atlas-frontend", score: 94, recommendation: "recommended", confidence: 96, strengths: ["React and TypeScript core match", "Remote across Americas", "Accessibility focus"], gaps: ["No material gaps"], blockingReasons: [], summary: "An exceptionally close match for Maya's current direction." },
-  { profileId: "maya-frontend", jobId: "northstar-product", score: 76, recommendation: "consider", confidence: 82, strengths: ["Senior-level product work", "React-adjacent role", "Hybrid in São Paulo"], gaps: ["Broader product scope than a frontend-specialist role"], blockingReasons: [], summary: "Strong adjacent opportunity if Maya wants wider product ownership." },
-  { profileId: "maya-frontend", jobId: "harbor-data", score: 22, recommendation: "skipped", confidence: 93, strengths: ["Senior level", "Remote work model"], gaps: ["SQL and Python are not core skills", "Data analyst role"], blockingReasons: ["Role is outside desired frontend path"], summary: "The work model fits, but the function does not." },
-  { profileId: "maya-frontend", jobId: "pixel-junior", score: 31, recommendation: "skipped", confidence: 98, strengths: ["React experience relevant", "Hybrid location accepted"], gaps: ["Junior level"], blockingReasons: ["Seniority is below accepted range"], summary: "Relevant stack, but materially below Maya's seniority target." },
-  { profileId: "maya-frontend", jobId: "legacy-php", score: 8, recommendation: "skipped", confidence: 98, strengths: ["Senior level"], gaps: ["PHP is excluded", "On-site work model"], blockingReasons: ["Excluded skill", "Work model is not accepted"], summary: "Does not meet Maya's core constraints." },
-  { profileId: "rafael-data", jobId: "atlas-frontend", score: 18, recommendation: "skipped", confidence: 95, strengths: ["Remote work model"], gaps: ["React and TypeScript focus", "No analytics scope"], blockingReasons: ["Role is outside desired data path"], summary: "A good engineering role, but not for Rafael's target function." },
-  { profileId: "rafael-data", jobId: "northstar-product", score: 41, recommendation: "consider", confidence: 76, strengths: ["Hybrid in Brazil", "Product context"], gaps: ["No SQL or Python emphasis"], blockingReasons: [], summary: "Adjacent product exposure may be useful, but the skills fit is incomplete." },
-  { profileId: "rafael-data", jobId: "harbor-data", score: 96, recommendation: "recommended", confidence: 97, strengths: ["SQL and Python core match", "Product analytics focus", "Remote in Brazil"], gaps: ["No material gaps"], blockingReasons: [], summary: "An exceptionally close match for Rafael's data and BI goals." },
-  { profileId: "rafael-data", jobId: "pixel-junior", score: 12, recommendation: "skipped", confidence: 96, strengths: ["Hybrid in Brazil"], gaps: ["Frontend role", "Junior level"], blockingReasons: ["Role is outside desired data path"], summary: "Not aligned with Rafael's desired role or level." },
-  { profileId: "rafael-data", jobId: "legacy-php", score: 9, recommendation: "skipped", confidence: 97, strengths: ["Senior level"], gaps: ["PHP platform focus", "On-site work model"], blockingReasons: ["Role is outside desired data path", "Work model is not accepted"], summary: "Does not meet Rafael's role or work-model requirements." },
+const frontendAnalyses: JobAnalysis[] = [
+  { profileId: mockProfileIds.frontend, jobId: "atlas-frontend", score: 94, recommendation: "recommended", confidence: 96, strengths: ["React and TypeScript core match", "Remote across Americas", "Accessibility focus"], gaps: ["No material gaps"], blockingReasons: [], summary: "An exceptionally close mocked match for this frontend profile." },
+  { profileId: mockProfileIds.frontend, jobId: "northstar-product", score: 76, recommendation: "consider", confidence: 82, strengths: ["Senior-level product work", "React-adjacent role"], gaps: ["Broader product scope than a frontend-specialist role"], blockingReasons: [], summary: "A strong adjacent opportunity in this mocked dataset." },
+  { profileId: mockProfileIds.frontend, jobId: "harbor-data", score: 22, recommendation: "skipped", confidence: 93, strengths: ["Senior level"], gaps: ["Data analyst role"], blockingReasons: ["Role is outside desired frontend path"], summary: "The work model fits, but the function does not." },
+  { profileId: mockProfileIds.frontend, jobId: "pixel-junior", score: 31, recommendation: "skipped", confidence: 98, strengths: ["React experience relevant"], gaps: ["Junior level"], blockingReasons: ["Seniority is below accepted range"], summary: "Relevant stack, but below this profile's seniority target." },
+  { profileId: mockProfileIds.frontend, jobId: "legacy-php", score: 8, recommendation: "skipped", confidence: 98, strengths: ["Senior level"], gaps: ["PHP is excluded", "On-site work model"], blockingReasons: ["Excluded skill"], summary: "Does not meet this profile's core constraints." },
 ];
+
+const dataAnalyses: JobAnalysis[] = [
+  { profileId: mockProfileIds.data, jobId: "atlas-frontend", score: 18, recommendation: "skipped", confidence: 95, strengths: ["Remote work model"], gaps: ["React and TypeScript focus"], blockingReasons: ["Role is outside desired data path"], summary: "A good engineering role, but not for this data profile." },
+  { profileId: mockProfileIds.data, jobId: "northstar-product", score: 41, recommendation: "consider", confidence: 76, strengths: ["Hybrid in Brazil", "Product context"], gaps: ["No SQL or Python emphasis"], blockingReasons: [], summary: "Adjacent product exposure may be useful, but the skills fit is incomplete." },
+  { profileId: mockProfileIds.data, jobId: "harbor-data", score: 96, recommendation: "recommended", confidence: 97, strengths: ["SQL and Python core match", "Product analytics focus"], gaps: ["No material gaps"], blockingReasons: [], summary: "An exceptionally close mocked match for this data profile." },
+  { profileId: mockProfileIds.data, jobId: "pixel-junior", score: 12, recommendation: "skipped", confidence: 96, strengths: ["Hybrid in Brazil"], gaps: ["Frontend role", "Junior level"], blockingReasons: ["Role is outside desired data path"], summary: "Not aligned with this profile's desired role or level." },
+  { profileId: mockProfileIds.data, jobId: "legacy-php", score: 9, recommendation: "skipped", confidence: 97, strengths: ["Senior level"], gaps: ["PHP platform focus", "On-site work model"], blockingReasons: ["Role is outside desired data path"], summary: "Does not meet this profile's role or work-model requirements." },
+];
+
+export const jobAnalyses = [...frontendAnalyses, ...dataAnalyses];
+
+export function getMockAnalysis(profileId: string, jobId: string, analyses: JobAnalysis[]) {
+  const exact = analyses.find((analysis) => analysis.profileId === profileId && analysis.jobId === jobId);
+  if (exact) return exact;
+  const fallback = analyses.find((analysis) => analysis.jobId === jobId);
+  return fallback ? { ...fallback, profileId, summary: `Mocked placeholder analysis: ${fallback.summary}` } : undefined;
+}
