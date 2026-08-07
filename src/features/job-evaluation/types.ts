@@ -1,3 +1,23 @@
-import type { PersistedJob } from "@/types/domain";
-export type EvaluationReason = { code: string; outcome: "pass" | "fail" | "neutral"; message: string };
-export type DeterministicJobEvaluation = { job: PersistedJob; profileId: string; eligible: boolean; status: "eligible" | "rejected"; evaluatedAt: string; score: number; reasons: EvaluationReason[]; matchedKeywords: string[]; matchedRequiredKeywords: string[]; matchedPreferredKeywords: string[]; excludedKeywordMatches: string[]; titleMatch: { matched: boolean | null; matchedTerms: string[] }; seniorityMatch: { matched: boolean | null; detectedSeniorities: string[] }; locationMatch: { matched: boolean | null; matchedTerms: string[] }; workModelMatch: { matched: boolean | null; detectedModels: string[] } };
+import type { PersistedJob } from '@/types/domain';
+export type EvaluationReason = {
+  code: string;
+  outcome: 'pass' | 'fail' | 'neutral';
+  message: string;
+};
+export type DeterministicJobEvaluation = {
+  job: PersistedJob;
+  profileId: string;
+  eligible: boolean;
+  status: 'eligible' | 'rejected';
+  evaluatedAt: string;
+  score: number;
+  reasons: EvaluationReason[];
+  matchedKeywords: string[];
+  matchedRequiredKeywords: string[];
+  matchedPreferredKeywords: string[];
+  excludedKeywordMatches: string[];
+  titleMatch: { matched: boolean | null; matchedTerms: string[] };
+  seniorityMatch: { matched: boolean | null; detectedSeniorities: string[] };
+  locationMatch: { matched: boolean | null; matchedTerms: string[] };
+  workModelMatch: { matched: boolean | null; detectedModels: string[] };
+};

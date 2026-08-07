@@ -1,4 +1,44 @@
-"use client";
-import { useActionState } from "react";
-import { initialJobStatusActionState, saveJobStatusAction } from "@/features/job-actions/actions";
-export function JobStatusControls({ profileId, jobId, currentStatus = "new" }: { profileId: string; jobId: string; currentStatus?: string }) { const [state, action, pending] = useActionState(saveJobStatusAction, initialJobStatusActionState); const current = state.current ?? currentStatus; return <form action={action} className="mt-3"><input type="hidden" name="profileId" value={profileId}/><input type="hidden" name="jobId" value={jobId}/><p className="text-sm" role="status">Current state: {current}</p><div className="mt-2 flex gap-2">{["saved", "ignored", "applied", "rejected"].map((status) => <button key={status} name="status" value={status} disabled={pending} aria-pressed={current === status} className="rounded border px-2 py-1 text-sm capitalize">{status === "saved" ? "Save" : status === "ignored" ? "Ignore" : status[0].toUpperCase()+status.slice(1)}</button>)}</div>{state.status === "success" && <p className="mt-1 text-sm">{state.message}</p>}{state.status === "error" && <p role="alert">{state.message}</p>}</form>; }
+'use client';
+import { useActionState } from 'react';
+import { initialJobStatusActionState, saveJobStatusAction } from '@/features/job-actions/actions';
+export function JobStatusControls({
+  profileId,
+  jobId,
+  currentStatus = 'new',
+}: {
+  profileId: string;
+  jobId: string;
+  currentStatus?: string;
+}) {
+  const [state, action, pending] = useActionState(saveJobStatusAction, initialJobStatusActionState);
+  const current = state.current ?? currentStatus;
+  return (
+    <form action={action} className="mt-3">
+      <input type="hidden" name="profileId" value={profileId} />
+      <input type="hidden" name="jobId" value={jobId} />
+      <p className="text-sm" role="status">
+        Current state: {current}
+      </p>
+      <div className="mt-2 flex gap-2">
+        {['saved', 'ignored', 'applied', 'rejected'].map((status) => (
+          <button
+            key={status}
+            name="status"
+            value={status}
+            disabled={pending}
+            aria-pressed={current === status}
+            className="rounded border px-2 py-1 text-sm capitalize"
+          >
+            {status === 'saved'
+              ? 'Save'
+              : status === 'ignored'
+                ? 'Ignore'
+                : status[0].toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+      {state.status === 'success' && <p className="mt-1 text-sm">{state.message}</p>}
+      {state.status === 'error' && <p role="alert">{state.message}</p>}
+    </form>
+  );
+}

@@ -96,6 +96,10 @@ Each profile has an independent explicit decision for every persisted job. The a
 
 Notes are stored with a decision but are not yet available in the UI. Job actions never trigger AI, notifications, or an automatic application, and they do not produce learning or insights.
 
+## Descriptive insights
+
+`/insights` provides deterministic descriptive summaries of collected jobs and explicit per-profile decisions. Results are filtered by profile and by `first_seen_at` (last 7 days, last 30 days, or all history). They describe only the collected sample, include its size and small-sample cautions, and do not use AI, change profile weights, or generate career recommendations.
+
 ## Manual AI analysis
 
 Manual structured AI analysis uses Gemini Developer API free tier. Live provider validation is pending; ChatGPT Plus does not fund embedded API usage. The analysis is advisory, manual, non-persistent, eligible-only in the current UI, and never submits an application. There is no paid fallback.

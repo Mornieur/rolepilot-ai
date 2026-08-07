@@ -1,13 +1,17 @@
-import type { CandidateProfile, Seniority, WorkModel } from "@/types/domain";
+import type { CandidateProfile, Seniority, WorkModel } from '@/types/domain';
 
-import type { CandidateProfileInput } from "@/features/profiles/schemas/candidate-profile";
-import type { CandidateProfileRow } from "@/features/profiles/types/database";
+import type { CandidateProfileInput } from '@/features/profiles/schemas/candidate-profile';
+import type { CandidateProfileRow } from '@/features/profiles/types/database';
 
-const seniorityValues: Seniority[] = ["junior", "mid", "senior", "staff"];
-const workModelValues: WorkModel[] = ["remote", "hybrid", "on-site"];
+const seniorityValues: Seniority[] = ['junior', 'mid', 'senior', 'staff'];
+const workModelValues: WorkModel[] = ['remote', 'hybrid', 'on-site'];
 
-function isSeniority(value: string): value is Seniority { return seniorityValues.some((candidate) => candidate === value); }
-function isWorkModel(value: string): value is WorkModel { return workModelValues.some((candidate) => candidate === value); }
+function isSeniority(value: string): value is Seniority {
+  return seniorityValues.some((candidate) => candidate === value);
+}
+function isWorkModel(value: string): value is WorkModel {
+  return workModelValues.some((candidate) => candidate === value);
+}
 const arrayOrEmpty = (value: string[] | null) => value ?? [];
 
 export function toCandidateProfile(row: CandidateProfileRow): CandidateProfile {

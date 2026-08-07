@@ -1,16 +1,16 @@
-export const workModels = ["remote", "hybrid", "on-site"] as const;
+export const workModels = ['remote', 'hybrid', 'on-site'] as const;
 export type WorkModel = (typeof workModels)[number];
 
-export const seniorities = ["junior", "mid", "senior", "staff"] as const;
+export const seniorities = ['junior', 'mid', 'senior', 'staff'] as const;
 export type Seniority = (typeof seniorities)[number];
 
-export const recommendations = ["recommended", "consider", "skipped"] as const;
+export const recommendations = ['recommended', 'consider', 'skipped'] as const;
 export type Recommendation = (typeof recommendations)[number];
 
-export const jobSourceProviders = ["greenhouse", "lever"] as const;
+export const jobSourceProviders = ['greenhouse', 'lever'] as const;
 export type JobSourceProvider = (typeof jobSourceProviders)[number];
 
-export const companyPriorities = ["normal", "high"] as const;
+export const companyPriorities = ['normal', 'high'] as const;
 export type CompanyPriority = (typeof companyPriorities)[number];
 
 export type CandidateProfile = {
@@ -39,7 +39,7 @@ export type TargetCompany = {
 
 export type PersistedJob = {
   id: string;
-  provider: "greenhouse";
+  provider: 'greenhouse';
   targetCompanyId: string;
   externalId: string;
   title: string;
@@ -55,7 +55,7 @@ export type PersistedJob = {
   createdAt: string;
   updatedAt: string;
 };
-export const jobUserStatuses = ["new", "saved", "ignored", "applied", "rejected"] as const;
+export const jobUserStatuses = ['new', 'saved', 'ignored', 'applied', 'rejected'] as const;
 export type JobUserStatus = (typeof jobUserStatuses)[number];
 
 export type Job = {
@@ -84,6 +84,6 @@ export type JobMatch = {
 };
 
 export type JobAnalysis = JobMatch & {
-  profileId: CandidateProfile["id"];
-  jobId: Job["id"];
+  profileId: CandidateProfile['id'];
+  jobId: Job['id'];
 };

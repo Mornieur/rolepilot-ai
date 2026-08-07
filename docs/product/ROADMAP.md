@@ -1,7 +1,7 @@
 # Roadmap
 
-1. **Implementado:** fonte de verdade.
-2. **Aprovado-next:** migrar OpenAI transitório para Gemini free tier.
-3. **Planejado:** validar uma análise Gemini; FeitozaUI; persistir análises; ações de vaga; URL/texto manual; segundo adaptador; coleta remota; in-app; Telegram; métricas; currículos; Auth/RLS; email; Alexa; SaaS ampliado.
+1. **Implemented:** source of truth, Gemini free-tier runtime, persisted job actions, and deterministic descriptive insights.
+2. **Next:** review insights with real collected data before expanding reporting.
+3. **Planned:** persisted analyses, a second adapter, scheduled collection, notifications, authentication/RLS, and additional product workflows.
 
-Sem datas.
+No dates are committed.

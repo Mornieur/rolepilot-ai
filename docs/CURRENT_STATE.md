@@ -30,8 +30,8 @@ Greenhouse is manual and read-only until an explicit collection is requested. Su
 
 ## Current milestone
 
-Per-profile job actions and dashboard counters.
+Deterministic descriptive job insights, filtered by profile and period.
 
 ## Next approved milestone
 
-Generate descriptive insights from collected jobs and user actions, without using AI for the first version.
+Review deterministic insights with real collected data before considering another reporting slice.
