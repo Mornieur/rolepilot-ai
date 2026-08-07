@@ -60,4 +60,13 @@ describe("Dashboard", () => {
     render(<Dashboard profiles={profiles} jobs={jobs} analyses={jobAnalyses} />);
     expect(screen.getByRole("link", { name: "Evaluate collected jobs" })).toHaveAttribute("href", "/jobs/evaluate");
   });
+
+  it("shows per-profile job-action counters, including zero, and switches them with the profile", () => {
+    render(<Dashboard profiles={profiles} jobs={jobs} analyses={jobAnalyses} jobStatusCountsByProfile={{ [mockProfileIds.frontend]: { new: 0, saved: 3, ignored: 0, applied: 1, rejected: 0 }, [mockProfileIds.data]: { new: 0, saved: 0, ignored: 2, applied: 0, rejected: 4 } }} />);
+    expect(screen.getByText("Saved").parentElement).toHaveTextContent("3");
+    expect(screen.getByText("Ignored").parentElement).toHaveTextContent("0");
+    fireEvent.change(screen.getByLabelText("Candidate profile"), { target: { value: mockProfileIds.data } });
+    expect(screen.getByText("Saved").parentElement).toHaveTextContent("0");
+    expect(screen.getByText("Rejected").parentElement).toHaveTextContent("4");
+  });
 });

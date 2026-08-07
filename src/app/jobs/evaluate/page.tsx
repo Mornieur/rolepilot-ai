@@ -2,6 +2,8 @@ import Link from "next/link";
 import { EvaluationResults } from "@/features/job-evaluation/components/evaluation-results";
 import { evaluatePersistedJobsForProfile } from "@/features/job-evaluation/server";
 import { loadCandidateProfiles } from "@/features/profiles/server/load-profiles";
+import { getStatus } from "@/features/job-actions/server/job-statuses";
+import type { JobUserStatus } from "@/types/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -10,10 +12,12 @@ export default async function EvaluateJobsPage({ searchParams }: { searchParams:
   if (profiles.error || !profiles.profiles) return <main className="p-8">Profile configuration unavailable.</main>;
 
   let results = null;
+  let statuses: Record<string, JobUserStatus> = {};
   let error: string | null = null;
   if (profileId) {
     try {
       results = await evaluatePersistedJobsForProfile(profileId);
+      statuses = Object.fromEntries(await Promise.all(results.map(async (result) => [result.job.id, (await getStatus(result.profileId, result.job.id)).status])));
     } catch {
       error = "Evaluation could not be completed. Select a current candidate profile and try again.";
     }
@@ -32,6 +36,6 @@ export default async function EvaluateJobsPage({ searchParams }: { searchParams:
       <button className="rounded bg-blue-700 px-3 py-1 text-white">Evaluate jobs</button>
     </form>}
     {error && <p role="alert" className="mt-4 text-red-700">{error}</p>}
-    {results && <EvaluationResults results={results} />}
+    {results && <EvaluationResults results={results} statuses={statuses} />}
   </div></main>;
 }
