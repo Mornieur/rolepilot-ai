@@ -1,34 +1,37 @@
 # Current State
 
 ## Repository
-- Branch: `feat/structured-ai-analysis`; commit: `c3e4bbc feat: add manual structured AI job analysis`.
-- Árvore: documentação não commitada.
+
+- Branch: `develop`.
+- Job Actions is ready for commit validation. Pre-existing unrelated changes in `.gitignore` and `supabase/.temp/` are preserved.
 
 ## Runtime provider
-- Aprovado: Gemini Developer API free tier.
-- Atual: Gemini Developer API (`@google/genai`, `GEMINI_API_KEY`, `GEMINI_MODEL`).
-- Status: OpenAI removido; validação Gemini ao vivo pendente.
+
+- Approved and current: Gemini Developer API (`@google/genai`, `GEMINI_API_KEY`, `GEMINI_MODEL`).
+- OpenAI is removed.
 
 ## Implemented
-Perfis, empresas, preview Greenhouse, coleta manual com re-fetch, deduplicação, vagas persistidas, filtro determinístico e análise estruturada manual técnica.
 
-## Transitional or partial
-Análise Gemini manual não persistida; UI atual limita análise a elegíveis, diferente da política futura de análise manual para qualquer vaga.
+Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, and manual structured Gemini analysis are implemented.
+
+Job actions are implemented per profile + job pair. `new` means that no explicit decision row exists; persisted decisions are `saved`, `ignored`, `applied`, and `rejected`. Manual transitions are allowed. The dashboard has isolated per-profile counters. Notes exist in the database but not in the UI.
 
 ## Not implemented
-Gemini, agendamento, Lever, ações de vaga, persistência de análise, notificações, FeitozaUI, Auth/RLS e métricas.
+
+Automatic learning, descriptive insights, scheduling, Lever collection, persisted analysis, notifications, FeitozaUI, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications.
 
 ## Migrations
-`202607290001_create_candidate_profiles.sql`, `...002_create_target_companies.sql`, `...003_create_jobs.sql`.
+
+`202607290001_create_candidate_profiles.sql`, `202607290002_create_target_companies.sql`, `202607290003_create_jobs.sql`, and `202608060001_create_job_user_statuses.sql`.
 
 ## External integrations
-Greenhouse manual, Supabase e Gemini; nenhuma chamada Gemini ao vivo validada.
 
-## Last validation
-Typecheck, lint, 44 testes, build e diff check passaram anteriormente.
+Greenhouse is manual and read-only until an explicit collection is requested. Supabase stores product data. Gemini analysis is manual and advisory.
 
 ## Current milestone
-Fonte de verdade consolidada.
+
+Per-profile job actions and dashboard counters.
 
 ## Next approved milestone
-Validar uma análise Gemini real sem persistir o resultado.
+
+Generate descriptive insights from collected jobs and user actions, without using AI for the first version.

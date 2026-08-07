@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { getMockAnalysis } from "@/features/jobs/mock-data";
 import { formatLabel, formatScore } from "@/lib/format";
-import type { CandidateProfile, Job, JobAnalysis, Recommendation, TargetCompany } from "@/types/domain";
+import type { CandidateProfile, Job, JobAnalysis, JobUserStatus, Recommendation, TargetCompany } from "@/types/domain";
 
 type DashboardProps = {
   profiles: CandidateProfile[];
@@ -14,6 +14,8 @@ type DashboardProps = {
   companies?: TargetCompany[];
   companyError?: string | null;
   persistedJobCount?: number;
+  jobStatusCountsByProfile?: Record<string, Record<JobUserStatus, number>>;
+  jobStatusCountsError?: string | null;
 };
 
 const recommendationStyles: Record<Recommendation, string> = {
@@ -22,7 +24,7 @@ const recommendationStyles: Record<Recommendation, string> = {
   skipped: "bg-slate-200 text-slate-700",
 };
 
-export function Dashboard({ profiles, jobs, analyses, companies = [], companyError = null, persistedJobCount = 0 }: DashboardProps) {
+export function Dashboard({ profiles, jobs, analyses, companies = [], companyError = null, persistedJobCount = 0, jobStatusCountsByProfile = {}, jobStatusCountsError = null }: DashboardProps) {
   const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id ?? "");
   const selectedProfile = profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0];
 
@@ -39,6 +41,7 @@ export function Dashboard({ profiles, jobs, analyses, companies = [], companyErr
 
   const recommendationCount = (recommendation: Recommendation) =>
     matchedJobs.filter((item) => item.analysis.recommendation === recommendation).length;
+  const statusCounts = jobStatusCountsByProfile[selectedProfile.id] ?? { new: 0, saved: 0, ignored: 0, applied: 0, rejected: 0 };
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-8 lg:px-12">
@@ -67,6 +70,7 @@ export function Dashboard({ profiles, jobs, analyses, companies = [], companyErr
           <Metric label="Skipped" value={recommendationCount("skipped")} tone="text-slate-600" />
         </section>
         <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5"><div className="flex justify-between gap-4"><div><h2 className="text-lg font-semibold">Collected jobs</h2><p className="mt-1 text-sm text-slate-600">{persistedJobCount} stored source jobs. No AI analysis has been performed.</p></div><Link href="/jobs" className="text-sm font-medium text-blue-700 underline underline-offset-4">Browse jobs</Link></div></section>
+        <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5" aria-labelledby="job-actions-heading"><h2 id="job-actions-heading" className="text-lg font-semibold">Job actions</h2><p className="mt-1 text-sm text-slate-600">Explicit decisions for {selectedProfile.name}.</p>{jobStatusCountsError ? <p role="alert" className="mt-4 text-sm text-red-700">Job action counters unavailable: {jobStatusCountsError}</p> : <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Saved" value={statusCounts.saved} tone="text-blue-800" /><Metric label="Applied" value={statusCounts.applied} tone="text-emerald-800" /><Metric label="Ignored" value={statusCounts.ignored} tone="text-slate-600" /><Metric label="Rejected" value={statusCounts.rejected} tone="text-red-800" /></dl>}</section>
         <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold">Deterministic filtering</h2><p className="mt-1 text-sm text-slate-600">Evaluate collected jobs with explicit rule-based profile preferences — no AI.</p><Link href="/jobs/evaluate" className="mt-3 inline-block text-sm font-medium text-blue-700 underline">Evaluate collected jobs</Link></section>
 
         <section className="mb-8 rounded-lg border border-slate-200 bg-white p-5" aria-labelledby="company-summary-heading">

@@ -49,6 +49,7 @@ Apply the migrations in order through the Supabase SQL editor:
 1. `supabase/migrations/202607290001_create_candidate_profiles.sql`
 2. `supabase/migrations/202607290002_create_target_companies.sql`
 3. `supabase/migrations/202607290003_create_jobs.sql`
+4. `supabase/migrations/202608060001_create_job_user_statuses.sql`
 
 Then run `supabase/seed.sql` to insert generic example profiles and companies. It is non-destructive and does not reset data.
 
@@ -88,6 +89,12 @@ The existing profile fields are sufficient, so no profile migration was needed:
 - detected seniority, location, and work model reject a job only when explicitly incompatible. Unknown or absent source data is neutral.
 
 Searchable source text is normalized case-insensitively, with accents and punctuation normalized, across title, description, location, departments, and offices. Seniority is detected from the title only. The page shows the rule reasons and a secondary 0–100 score; eligibility is always decided by the mandatory rules, not the score. Results exist only for the request and are not persisted.
+
+## Job actions
+
+Each profile has an independent explicit decision for every persisted job. The available decisions are `saved`, `ignored`, `applied`, and `rejected`; `new` means that no explicit decision row exists. Any manual transition is allowed. The dashboard shows per-profile counters for explicit decisions, and `/jobs/evaluate` exposes the controls.
+
+Notes are stored with a decision but are not yet available in the UI. Job actions never trigger AI, notifications, or an automatic application, and they do not produce learning or insights.
 
 ## Manual AI analysis
 

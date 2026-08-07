@@ -3,10 +3,12 @@
 import { useState } from "react";
 import type { DeterministicJobEvaluation } from "@/features/job-evaluation/types";
 import { AiAnalysisCard } from "@/features/ai-job-analysis/components/ai-analysis-card";
+import { JobStatusControls } from "@/features/job-actions/components/job-status-controls";
+import type { JobUserStatus } from "@/types/domain";
 
 type Filter = "all" | "eligible" | "rejected";
 
-export function EvaluationResults({ results }: { results: DeterministicJobEvaluation[] }) {
+export function EvaluationResults({ results, statuses = {} }: { results: DeterministicJobEvaluation[]; statuses?: Record<string, JobUserStatus> }) {
   const [filter, setFilter] = useState<Filter>("all");
   const visible = results.filter((result) => filter === "all" || result.status === filter);
   const eligible = results.filter((result) => result.eligible).length;
@@ -22,6 +24,7 @@ export function EvaluationResults({ results }: { results: DeterministicJobEvalua
           <h2 className="font-semibold">{result.job.title} — {result.status} ({result.score}/100)</h2>
           <p className="mt-1 text-sm text-slate-600">{result.job.provider} · {result.job.location ?? "Location not provided"}</p>
           <ul className="mt-2 text-sm">{result.reasons.map((reason) => <li key={reason.code}>{reason.outcome}: {reason.message}</li>)}</ul>
+          <JobStatusControls profileId={result.profileId} jobId={result.job.id} currentStatus={statuses[result.job.id] ?? "new"} />
           {result.eligible ? <AiAnalysisCard profileId={result.profileId} jobId={result.job.id} score={result.score} /> : <p className="mt-3 text-sm text-slate-600">AI analysis is available only after deterministic eligibility passes.</p>}
           <a href={result.job.originalUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-blue-700 underline">Open source</a>
         </article>)}

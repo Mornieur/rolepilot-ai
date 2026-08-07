@@ -27,6 +27,7 @@ export type TargetCompanyRow = {
 export type PersistedJobRow = {
   id: string; provider: string; target_company_id: string; external_id: string; title: string; location: string | null; description_text: string | null; original_url: string; source_updated_at: string | null; language: string | null; departments: string[] | null; offices: string[] | null; first_seen_at: string; last_seen_at: string; created_at: string; updated_at: string;
 };
+export type JobUserStatusRow = { id: string; profile_id: string; job_id: string; status: string; notes: string | null; created_at: string; updated_at: string; };
 
 export type Database = {
   public: {
@@ -49,6 +50,7 @@ export type Database = {
         Update: Partial<Omit<PersistedJobRow, "id" | "created_at" | "updated_at">>;
         Relationships: [];
       };
+      job_user_statuses: { Row: JobUserStatusRow; Insert: Omit<JobUserStatusRow, "id" | "created_at" | "updated_at"> & { id?: string }; Update: Partial<Omit<JobUserStatusRow, "id" | "created_at" | "updated_at">>; Relationships: []; };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

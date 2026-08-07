@@ -55,6 +55,8 @@ export type PersistedJob = {
   createdAt: string;
   updatedAt: string;
 };
+export const jobUserStatuses = ["new", "saved", "ignored", "applied", "rejected"] as const;
+export type JobUserStatus = (typeof jobUserStatuses)[number];
 
 export type Job = {
   id: string;
