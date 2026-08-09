@@ -1,5 +1,7 @@
 'use client';
+
 import { useActionState } from 'react';
+import { Button, Surface } from '@feitoza-ui/core';
 import { analyzeJobAction, initialAiAnalysisActionState } from '@/features/ai-job-analysis/actions';
 
 export function AiAnalysisCard({
@@ -13,30 +15,23 @@ export function AiAnalysisCard({
 }) {
   const [state, action, pending] = useActionState(analyzeJobAction, initialAiAnalysisActionState);
   return (
-    <section
-      className="mt-4 rounded border border-violet-200 bg-violet-50 p-4"
-      aria-labelledby={`ai-${jobId}`}
-    >
+    <Surface className="mt-4 p-4" aria-labelledby={`ai-${jobId}`}>
       <h3 id={`ai-${jobId}`} className="font-semibold">
-        Manual AI analysis
+        Manual Gemini analysis
       </h3>
       <p className="mt-1 text-sm">
-        AI-assisted analysis — review before deciding to apply. No application is submitted
+        Gemini-assisted analysis — review before deciding to apply. No application is submitted
         automatically.
       </p>
       <form action={action} className="mt-3">
         <input type="hidden" name="profileId" value={profileId} />
         <input type="hidden" name="jobId" value={jobId} />
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded bg-violet-700 px-3 py-1 text-sm text-white disabled:opacity-60"
-        >
-          {pending ? 'Analyzing…' : 'Analyze with AI'}
-        </button>
+        <Button type="submit" disabled={pending}>
+          {pending ? 'Analyzing…' : 'Analyze with Gemini'}
+        </Button>
       </form>
       {state.status === 'error' && (
-        <p role="alert" className="mt-3 text-sm text-red-700">
+        <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">
           {state.message}
         </p>
       )}
@@ -45,7 +40,7 @@ export function AiAnalysisCard({
           <p role="status" className="text-sm font-medium">
             {state.analysis.recommendation} · {state.analysis.confidence} confidence
           </p>
-          <p className="mt-2 text-sm">{state.analysis.summary}</p>
+          <p className="mt-2 break-words text-sm">{state.analysis.summary}</p>
           <p className="mt-2 text-sm">Deterministic score: {score}/100</p>
           <List
             title="Strengths"
@@ -61,7 +56,7 @@ export function AiAnalysisCard({
           <List title="Interview focus" items={state.analysis.interviewFocus} />
         </div>
       )}
-    </section>
+    </Surface>
   );
 }
 function List({ title, items }: { title: string; items: string[] }) {
@@ -70,7 +65,9 @@ function List({ title, items }: { title: string; items: string[] }) {
       <h4 className="text-sm font-medium">{title}</h4>
       <ul className="list-disc pl-5 text-sm">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item} className="break-words">
+            {item}
+          </li>
         ))}
       </ul>
     </div>

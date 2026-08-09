@@ -17,3 +17,12 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+:root[data-theme='dark'] {
+  --background: #07090f;
+  --foreground: #dde4f0;
+}
+
+:root[data-theme='dark'] body {
+  color-scheme: dark;
+}

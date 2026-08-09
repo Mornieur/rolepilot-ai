@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Alert, EmptyState } from '@/components/feitoza-ui';
+import { PageContainer, PageContent, PageHeader } from '@/components/page-layout';
 import { loadCandidateProfiles } from '@/features/profiles/server/load-profiles';
 import { InsightsDashboard } from '@/features/job-insights/components/insights-dashboard';
 import {
@@ -20,7 +22,15 @@ export default async function InsightsPage({
 }) {
   const [params, profiles] = await Promise.all([searchParams, loadCandidateProfiles()]);
   if (profiles.error || !profiles.profiles)
-    return <main className="p-8">Profiles are unavailable.</main>;
+    return (
+      <PageContainer>
+        <div className="mx-auto max-w-6xl">
+          <Alert variant="danger" title="Profiles are unavailable">
+            {profiles.error ?? 'Please try again.'}
+          </Alert>
+        </div>
+      </PageContainer>
+    );
   const period = insightPeriodSchema.catch('30d').parse(params.period);
   const profileId = params.profileId ?? profiles.profiles[0]?.id;
   let insight = null;
@@ -35,29 +45,39 @@ export default async function InsightsPage({
           : 'Insights are unavailable right now.';
     }
   return (
-    <main className="min-h-screen bg-slate-50 p-8 text-slate-900">
-      <InsightsClient>
-        <Link href="/" className="text-sm font-medium text-blue-700 underline">
-          Back to dashboard
-        </Link>
-        <h1 className="mt-6 text-3xl font-semibold">Collected job insights</h1>
-        <p className="mt-2 text-slate-600">
-          Descriptive insights from collected jobs and explicit decisions; this is not a view of the
-          whole market.
-        </p>
-        {profiles.profiles.length ? (
-          <InsightsFilters profiles={profiles.profiles} profileId={profileId} period={period} />
-        ) : (
-          <p className="mt-6">Create a candidate profile first.</p>
-        )}
-        {error && (
-          <p role="alert" className="mt-6 text-red-700">
-            {error}
-          </p>
-        )}
-        {insight &&
-          (insight.sampleSize ? <InsightsDashboard insight={insight} /> : <InsightsEmpty />)}
-      </InsightsClient>
-    </main>
+    <PageContainer>
+      <PageContent>
+        <PageHeader
+          title="Collected job insights"
+          description="Descriptive insights from collected jobs and explicit decisions; this is not a view of the whole market."
+          actions={
+            <Link
+              href="/"
+              className="text-sm font-medium text-sky-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:text-cyan-300"
+            >
+              Back to dashboard
+            </Link>
+          }
+        />
+        <InsightsClient>
+          {profiles.profiles.length ? (
+            <InsightsFilters profiles={profiles.profiles} profileId={profileId} period={period} />
+          ) : (
+            <EmptyState
+              className="mt-6"
+              title="Create a candidate profile first"
+              description="A profile is required before reviewing collected job insights."
+            />
+          )}
+          {error && (
+            <Alert className="mt-6" variant="danger" title="Insights unavailable" role="alert">
+              {error}
+            </Alert>
+          )}
+          {insight &&
+            (insight.sampleSize ? <InsightsDashboard insight={insight} /> : <InsightsEmpty />)}
+        </InsightsClient>
+      </PageContent>
+    </PageContainer>
   );
 }

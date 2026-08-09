@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Alert, Card, EmptyState, Surface } from '@/components/feitoza-ui';
+import { PageContainer, PageContent, PageHeader } from '@/components/page-layout';
 import { loadPersistedJobs } from '@/features/jobs/server/load-jobs';
 
 export const dynamic = 'force-dynamic';
@@ -7,59 +9,73 @@ export default async function JobsPage() {
   const result = await loadPersistedJobs();
   if (result.error || !result.jobs)
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-12">
-        <div className="mx-auto max-w-4xl rounded-lg border border-red-200 bg-white p-6">
-          <h1 className="text-2xl font-semibold">Stored jobs unavailable</h1>
-          <p className="mt-3 text-slate-600">{result.error}</p>
+      <PageContainer>
+        <div className="mx-auto max-w-4xl">
+          <Surface className="p-6">
+            <Alert variant="danger" title="Stored jobs unavailable">
+              {result.error}
+            </Alert>
+          </Surface>
         </div>
-      </main>
+      </PageContainer>
     );
+
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-8">
-      <div className="mx-auto max-w-5xl">
-        <Link href="/" className="text-sm font-medium text-blue-700 underline underline-offset-4">
-          Back to dashboard
-        </Link>
-        <h1 className="mt-6 text-3xl font-semibold">Collected source jobs</h1>
-        <p className="mt-2 text-slate-600">
-          These are collected source records, not AI recommendations.
-        </p>
+    <PageContainer>
+      <PageContent>
+        <PageHeader
+          title="Collected source jobs"
+          description="These are collected source records, not AI recommendations."
+          actions={
+            <Link
+              href="/"
+              className="text-sm font-medium text-sky-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:text-cyan-300"
+            >
+              Back to dashboard
+            </Link>
+          }
+        />
         {result.jobs.length === 0 ? (
-          <p className="mt-6 rounded-lg border border-slate-200 bg-white p-5 text-slate-600">
-            No jobs have been collected yet. Preview an enabled Greenhouse company and save its
-            jobs.
-          </p>
+          <EmptyState
+            className="mt-6"
+            title="No jobs collected yet"
+            description="Preview an enabled Greenhouse company and save its jobs."
+          />
         ) : (
           <div className="mt-6 space-y-4">
             {result.jobs.map((job) => (
-              <article key={job.id} className="rounded-lg border border-slate-200 bg-white p-5">
-                <h2 className="text-lg font-semibold">{job.title}</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  {job.provider} · {job.location ?? 'Location not provided'}
-                </p>
-                {job.departments.length > 0 && (
-                  <p className="mt-3 text-sm">Departments: {job.departments.join(', ')}</p>
-                )}
-                {job.offices.length > 0 && (
-                  <p className="mt-1 text-sm">Offices: {job.offices.join(', ')}</p>
-                )}
-                <p className="mt-3 text-xs text-slate-500">
-                  Source updated: {job.sourceUpdatedAt ?? 'Not provided'} · First seen:{' '}
-                  {job.firstSeenAt} · Last seen: {job.lastSeenAt}
-                </p>
-                <a
-                  href={job.originalUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-block text-sm font-medium text-blue-700 underline underline-offset-4"
-                >
-                  Open original source
-                </a>
+              <article key={job.id}>
+                <Card className="p-5">
+                  <h2 className="break-words text-lg font-semibold">{job.title}</h2>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    {job.provider} · {job.location ?? 'Location not provided'}
+                  </p>
+                  {job.departments.length > 0 && (
+                    <p className="mt-3 break-words text-sm">
+                      Departments: {job.departments.join(', ')}
+                    </p>
+                  )}
+                  {job.offices.length > 0 && (
+                    <p className="mt-1 break-words text-sm">Offices: {job.offices.join(', ')}</p>
+                  )}
+                  <p className="mt-3 break-words text-xs text-slate-500 dark:text-slate-400">
+                    Source updated: {job.sourceUpdatedAt ?? 'Not provided'} · First seen:{' '}
+                    {job.firstSeenAt} · Last seen: {job.lastSeenAt}
+                  </p>
+                  <a
+                    href={job.originalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-block text-sm font-medium text-sky-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:text-cyan-300"
+                  >
+                    Open original source <span className="sr-only">(opens in a new tab)</span>
+                  </a>
+                </Card>
               </article>
             ))}
           </div>
         )}
-      </div>
-    </main>
+      </PageContent>
+    </PageContainer>
   );
 }

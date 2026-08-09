@@ -3,7 +3,7 @@
 ## Repository
 
 - Branch: `develop`.
-- Job Actions is ready for commit validation. Pre-existing unrelated changes in `.gitignore` and `supabase/.temp/` are preserved.
+- FeitozaUI visual rollout is ready for commit validation; always verify the working tree before committing.
 
 ## Runtime provider
 
@@ -12,13 +12,13 @@
 
 ## Implemented
 
-Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, and manual structured Gemini analysis are implemented.
+Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, manual structured Gemini analysis, job actions, deterministic insights, and the FeitozaUI visual rollout are implemented.
 
-Job actions are implemented per profile + job pair. `new` means that no explicit decision row exists; persisted decisions are `saved`, `ignored`, `applied`, and `rejected`. Manual transitions are allowed. The dashboard has isolated per-profile counters. Notes exist in the database but not in the UI.
+Job actions are independent per profile and job pair. `new` means no explicit decision; persisted decisions are `saved`, `ignored`, `applied`, and `rejected`. Manual transitions are allowed. The dashboard has isolated per-profile counters. Notes exist in the database but not in the UI.
 
 ## Not implemented
 
-Automatic learning, descriptive insights, scheduling, Lever collection, persisted analysis, notifications, FeitozaUI, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications.
+Automatic learning, scheduling, Lever collection, persisted analysis, notifications, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications.
 
 ## Migrations
 
@@ -26,11 +26,11 @@ Automatic learning, descriptive insights, scheduling, Lever collection, persiste
 
 ## External integrations
 
-Greenhouse is manual and read-only until an explicit collection is requested. Supabase stores product data. Gemini analysis is manual and advisory.
+Greenhouse is manual and read-only until explicit collection. Supabase stores product data. Gemini analysis is manual and advisory.
 
 ## Current milestone
 
-Deterministic descriptive job insights, filtered by profile and period.
+Deterministic descriptive job insights, filtered by profile and period, with visual consistency across product routes.
 
 ## Next approved milestone
 

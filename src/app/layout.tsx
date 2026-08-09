@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { StyledComponentsRegistry } from '@/lib/styled-components-registry';
+import { AppShell } from '@/components/app-shell';
 
 export const metadata: Metadata = {
   title: 'RolePilot AI | Job intelligence',
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className="min-h-full flex flex-col">
-        <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
+        <StyledComponentsRegistry>
+          <AppShell>{children}</AppShell>
+        </StyledComponentsRegistry>
       </body>
     </html>
   );
