@@ -1,5 +1,9 @@
 # RolePilot AI
 
+## FeitozaUI visual system
+
+FeitozaUI is the official visual base, consumed only from the public `@feitoza-ui/core@0.3.0` entrypoint. Dashboard, profiles, companies, jobs, evaluation, and insights use its components where appropriate; Tailwind remains for responsive composition. The persisted light/dark shell is shared across these routes. Server-side data access remains on the server, while interactive selection, filters, and actions have narrow client boundaries. No business rule, score, eligibility, collection, Supabase behavior, or Gemini call count changed in the visual rollout. See [the adoption matrix](docs/architecture/FEITOZA_UI_ADOPTION_MATRIX.md).
+
 ## Documentação do projeto
 
 - [Visão do produto](docs/product/PRODUCT_VISION.md)

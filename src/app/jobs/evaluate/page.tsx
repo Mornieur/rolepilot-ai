@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Alert, Button, EmptyState, Select, Surface } from '@/components/feitoza-ui';
+import { PageContainer, PageContent, PageHeader } from '@/components/page-layout';
 import { EvaluationResults } from '@/features/job-evaluation/components/evaluation-results';
 import { evaluatePersistedJobsForProfile } from '@/features/job-evaluation/server';
 import { loadCandidateProfiles } from '@/features/profiles/server/load-profiles';
@@ -14,12 +16,19 @@ export default async function EvaluateJobsPage({
 }) {
   const [{ profileId }, profiles] = await Promise.all([searchParams, loadCandidateProfiles()]);
   if (profiles.error || !profiles.profiles)
-    return <main className="p-8">Profile configuration unavailable.</main>;
-
+    return (
+      <PageContainer>
+        <div className="mx-auto max-w-5xl">
+          <Alert variant="danger" title="Profile configuration unavailable">
+            {profiles.error ?? 'Please try again.'}
+          </Alert>
+        </div>
+      </PageContainer>
+    );
   let results = null;
   let statuses: Record<string, JobUserStatus> = {};
   let error: string | null = null;
-  if (profileId) {
+  if (profileId)
     try {
       results = await evaluatePersistedJobsForProfile(profileId);
       statuses = Object.fromEntries(
@@ -34,46 +43,67 @@ export default async function EvaluateJobsPage({
       error =
         'Evaluation could not be completed. Select a current candidate profile and try again.';
     }
-  }
-
   return (
-    <main className="min-h-screen bg-slate-50 p-8 text-slate-900">
-      <div className="mx-auto max-w-5xl">
-        <Link href="/jobs" className="text-blue-700 underline">
-          Back to jobs
-        </Link>
-        <h1 className="mt-6 text-3xl font-semibold">Rule-based job evaluation</h1>
-        <p className="mt-2 text-slate-600">
-          Rule-based evaluation only — no AI analysis has been performed.
-        </p>
-        {profiles.profiles.length === 0 ? (
-          <p className="mt-6">Create a candidate profile before evaluating jobs.</p>
-        ) : (
-          <form className="mt-6 flex flex-wrap items-center gap-3">
-            <label htmlFor="profileId">Candidate profile</label>
-            <select
-              id="profileId"
-              name="profileId"
-              defaultValue={profileId}
-              className="rounded border border-slate-300 px-2 py-1"
+    <PageContainer>
+      <PageContent>
+        <PageHeader
+          title="Rule-based job evaluation"
+          description="Deterministic evaluation is separate from optional Gemini analysis and your decision."
+          actions={
+            <Link
+              href="/jobs"
+              className="text-sm font-medium text-sky-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:text-cyan-300"
             >
-              <option value="">Choose a profile</option>
-              {profiles.profiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.name}
-                </option>
-              ))}
-            </select>
-            <button className="rounded bg-blue-700 px-3 py-1 text-white">Evaluate jobs</button>
-          </form>
+              Back to jobs
+            </Link>
+          }
+        />
+        {profiles.profiles.length === 0 ? (
+          <EmptyState
+            className="mt-6"
+            title="Create a candidate profile first"
+            description="A profile is required before evaluating collected jobs."
+            action={
+              <Link
+                href="/profiles"
+                className="text-sm font-medium text-sky-700 underline underline-offset-4 dark:text-cyan-300"
+              >
+                Manage profiles
+              </Link>
+            }
+          />
+        ) : (
+          <Surface className="mt-6 p-5">
+            <form className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-1">
+                <Select
+                  id="profileId"
+                  name="profileId"
+                  label="Candidate profile"
+                  defaultValue={profileId}
+                  fullWidth
+                >
+                  <option value="">Choose a profile</option>
+                  {profiles.profiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Button type="submit" className="w-full sm:w-auto">
+                Evaluate jobs
+              </Button>
+            </form>
+          </Surface>
         )}
         {error && (
-          <p role="alert" className="mt-4 text-red-700">
+          <Alert className="mt-4" variant="danger" title="Evaluation unavailable" role="alert">
             {error}
-          </p>
+          </Alert>
         )}
         {results && <EvaluationResults results={results} statuses={statuses} />}
-      </div>
-    </main>
+      </PageContent>
+    </PageContainer>
   );
 }

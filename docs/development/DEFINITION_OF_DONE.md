@@ -1,3 +1,5 @@
 # Definition of Done
 
-Um slice termina com escopo cumprido, testes, typecheck, lint, build e diff check; estados de erro/carregamento/vazio, acessibilidade, documentação, segurança de segredos e Git revisados. Integrações externas precisam timeout e erro controlados. Validação viva pendente deve ser declarada; uma integração não é production-ready sem validação manual apropriada.
+A slice finishes with fulfilled scope, tests, typecheck, lint, build, and diff check; error/loading/empty states, accessibility, documentation, secret safety, and Git are reviewed. Visual work also validates responsive layout, contrast, visible focus, light/dark theme, semantic HTML, and public FeitozaUI imports only.
+
+External integrations need timeout and controlled errors. Pending live validation must be declared; an integration is not production-ready without appropriate manual validation.
