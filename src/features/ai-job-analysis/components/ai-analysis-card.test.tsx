@@ -6,9 +6,7 @@ vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
   useActionState,
 }));
-vi.mock('@/features/ai-job-analysis/actions', () => ({
-  analyzeJobAction: vi.fn(),
-}));
+vi.mock('@/features/ai-job-analysis/actions', () => ({ analyzeJobAction: vi.fn() }));
 
 import { AiAnalysisCard } from './ai-analysis-card';
 
@@ -55,14 +53,14 @@ describe('AiAnalysisCard persisted analysis UI', () => {
     expect(screen.getByRole('button', { name: 'Analisar com Gemini' })).toBeEnabled();
   });
 
-  it('renders a current persisted analysis, its textual status, metadata, and all result sections', () => {
+  it('renders a current persisted analysis with Portuguese enum labels and metadata', () => {
     useActionState.mockReturnValue([{ status: 'idle' }, vi.fn(), false]);
     renderCard(latest);
     expect(screen.getByRole('status')).toHaveTextContent('atual');
-    expect(screen.getByText('apply · confiança high')).toBeInTheDocument();
+    expect(screen.getByText(/Candidatar-se.*confiança alta/)).toBeInTheDocument();
     expect(screen.getByText('Persisted summary')).toBeInTheDocument();
     expect(screen.getByText('React: Required skill matched')).toBeInTheDocument();
-    expect(screen.getByText('GraphQL (low): Nice to have')).toBeInTheDocument();
+    expect(screen.getByText('GraphQL (baixa): Nice to have')).toBeInTheDocument();
     expect(screen.getByText('Timezone overlap')).toBeInTheDocument();
     expect(screen.getByText('Architecture tradeoffs')).toBeInTheDocument();
     expect(screen.getByText(/Analisada em:/)).toBeInTheDocument();
@@ -71,6 +69,30 @@ describe('AiAnalysisCard persisted analysis UI', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reanalisar com Gemini' })).toBeEnabled();
   });
+
+  it.each([
+    ['strong_apply', 'low', 'Candidatar-se com prioridade', 'baixa'],
+    ['apply', 'medium', 'Candidatar-se', 'média'],
+    ['consider', 'high', 'Considerar', 'alta'],
+    ['skip', 'low', 'Não recomendar', 'baixa'],
+  ] as const)(
+    'renders %s and %s as Portuguese UI labels',
+    (recommendation, confidence, label, level) => {
+      useActionState.mockReturnValue([{ status: 'idle' }, vi.fn(), false]);
+      render(
+        <AiAnalysisCard
+          profileId="profile-1"
+          jobId="job-1"
+          latestAnalysis={{
+            ...latest,
+            stale: false,
+            analysis: { ...latest.analysis, recommendation, confidence },
+          }}
+        />,
+      );
+      expect(screen.getByText(new RegExp(`${label}.*confiança ${level}`))).toBeInTheDocument();
+    },
+  );
 
   it('keeps stale analysis visible with a textual context-change warning', () => {
     useActionState.mockReturnValue([{ status: 'idle' }, vi.fn(), false]);
@@ -88,7 +110,7 @@ describe('AiAnalysisCard persisted analysis UI', () => {
   it('uses action state for pending, successful reanalysis, and safe failures without erasing history', () => {
     useActionState.mockReturnValue([{ status: 'idle' }, vi.fn(), true]);
     const pending = renderCard(latest);
-    expect(screen.getByRole('button', { name: 'Analisando…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Analisando/ })).toBeDisabled();
     pending.unmount();
 
     useActionState.mockReturnValue([

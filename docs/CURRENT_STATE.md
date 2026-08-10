@@ -19,7 +19,7 @@ Não há ocorrência de `fdprocessedid` no código-fonte. Um aviso de hidrataç�
 
 Job actions are independent per profile and job pair. `new` means no explicit decision; persisted decisions are `saved`, `ignored`, `applied`, and `rejected`. Manual transitions are allowed. The dashboard has isolated per-profile counters. Notes exist in the database but not in the UI.
 
-Job decision controls submit explicit status values and immediately display the returned persisted state and concise feedback. Insights preserves its selected collected/relevant scope through GET search parameters; the relevant scope is deterministic-only.
+Job decision controls submit explicit status values and immediately display the returned persisted state and concise feedback. The persisted choice also remains visibly selected after the request and on a server-loaded refresh. Insights preserves its selected collected/relevant scope through GET search parameters; the relevant scope is deterministic-only.
 
 ## Not implemented
 

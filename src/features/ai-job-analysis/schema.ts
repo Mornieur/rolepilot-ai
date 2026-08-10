@@ -1,12 +1,15 @@
 import { z } from 'zod';
 
 export const AI_JOB_ANALYSIS_SCHEMA_VERSION = '1';
+export const SUMMARY_MIN_LENGTH = 1;
+export const SUMMARY_MAX_LENGTH = 600;
 
 const short = z.string().trim().min(1).max(280);
+const summary = z.string().trim().min(SUMMARY_MIN_LENGTH).max(SUMMARY_MAX_LENGTH);
 export const aiJobAnalysisSchema = z.object({
   recommendation: z.enum(['strong_apply', 'apply', 'consider', 'skip']),
   confidence: z.enum(['low', 'medium', 'high']),
-  summary: short.max(600),
+  summary,
   strengths: z.array(z.object({ title: short.max(100), evidence: short })).max(4),
   gaps: z
     .array(
@@ -31,7 +34,8 @@ export type InvalidAiAnalysisClassification =
   | 'invalid_enum'
   | 'invalid_type'
   | 'unexpected_null'
-  | 'string_constraint'
+  | 'string_too_short'
+  | 'string_too_long'
   | 'deterministic_score_mismatch'
   | 'schema_validation_failed';
 
@@ -66,8 +70,11 @@ export function classifyAiAnalysisValidationFailure(
     return { classification: 'unexpected_null', fieldPath };
   if (issue?.code === 'invalid_value') return { classification: 'invalid_enum', fieldPath };
   if (issue?.code === 'invalid_type') return { classification: 'invalid_type', fieldPath };
-  if (issue?.code === 'too_small' || issue?.code === 'too_big')
-    return { classification: 'string_constraint', fieldPath };
+  const issueOrigin = (issue as { origin?: unknown } | undefined)?.origin;
+  if (issue?.code === 'too_small' && issueOrigin === 'string')
+    return { classification: 'string_too_short', fieldPath };
+  if (issue?.code === 'too_big' && issueOrigin === 'string')
+    return { classification: 'string_too_long', fieldPath };
   return { classification: 'schema_validation_failed', fieldPath };
 }
 export const aiJobAnalysisJsonSchema = {
@@ -86,7 +93,7 @@ export const aiJobAnalysisJsonSchema = {
   properties: {
     recommendation: { type: 'string', enum: ['strong_apply', 'apply', 'consider', 'skip'] },
     confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
-    summary: { type: 'string', minLength: 1, maxLength: 600 },
+    summary: { type: 'string', minLength: SUMMARY_MIN_LENGTH, maxLength: SUMMARY_MAX_LENGTH },
     strengths: {
       type: 'array',
       maxItems: 4,

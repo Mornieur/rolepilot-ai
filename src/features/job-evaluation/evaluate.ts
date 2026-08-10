@@ -158,7 +158,7 @@ export function evaluateJob(
     });
   if (preferred.length) {
     score += Math.min(15, preferred.length * 5);
-    reasons.push({ code: 'preferred', outcome: 'pass', message: 'Preferred keywords matched.' });
+    reasons.push({ code: 'preferred', outcome: 'pass', message: 'Skills desejáveis encontradas.' });
   }
   if (requiredOk && requiredCoverage < 1)
     reasons.push({
@@ -177,7 +177,7 @@ export function evaluateJob(
   ] as const) {
     if (value === true) {
       score += 10;
-      reasons.push({ code, outcome: 'pass', message: `${label} is accepted.` });
+      reasons.push({ code, outcome: 'pass', message: `${label} compatível.` });
     } else if (value === false) {
       score -= 10;
       reasons.push({
