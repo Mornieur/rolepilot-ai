@@ -23,6 +23,9 @@ export function toPersistedJob(row: PersistedJobRow): PersistedJob {
     lastSeenAt: row.last_seen_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    isActive: row.is_active ?? true,
+    missingSuccessfulRuns: row.missing_successful_runs ?? 0,
+    closedAt: row.closed_at ?? null,
   };
 }
 

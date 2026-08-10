@@ -109,7 +109,13 @@ export async function persistCollectedJobs(
       continue;
     }
     if (!current) throw new PersistedJobDataError();
-    const changes = { ...previewToJobFields(preview), last_seen_at: now };
+    const changes = {
+      ...previewToJobFields(preview),
+      last_seen_at: now,
+      is_active: true,
+      missing_successful_runs: 0,
+      closed_at: null,
+    };
     const { data, error } = await client
       .from('jobs')
       .update(changes)
@@ -125,6 +131,21 @@ export async function persistCollectedJobs(
       status,
       persistedJobId: data.id,
     });
+  }
+  const seenIds = new Set(result.jobs.map((job) => job.persistedJobId));
+  for (const job of existing) {
+    if (seenIds.has(job.id)) continue;
+    const missing = (job.missingSuccessfulRuns ?? 0) + 1;
+    const closed = missing >= 3;
+    const { error } = await client
+      .from('jobs')
+      .update({
+        missing_successful_runs: missing,
+        is_active: !closed,
+        closed_at: closed ? new Date().toISOString() : null,
+      })
+      .eq('id', job.id);
+    if (error) fail('lifecycle update');
   }
   result.completedAt = new Date().toISOString();
   return result;

@@ -7,7 +7,8 @@ import {
 } from '@/features/companies/server/target-companies';
 import { GreenhouseError } from '@/features/job-sources/greenhouse/errors';
 import { fetchGreenhouseJobs } from '@/features/job-sources/greenhouse/client';
-import { persistCollectedJobs, PersistedJobDataError } from '@/features/jobs/server/persisted-jobs';
+import { PersistedJobDataError } from '@/features/jobs/server/persisted-jobs';
+import { runCollection } from '@/features/job-collection/server/run-collection';
 import { revalidatePath } from 'next/cache';
 import type {
   GreenhouseCollectionActionState,
@@ -77,17 +78,24 @@ export async function saveGreenhouseJobsAction(
         status: 'error',
         message: 'Job collection is currently available only for Greenhouse companies.',
       };
-    const preview = await fetchGreenhouseJobs(company);
-    const result = await persistCollectedJobs(
-      company.id,
-      preview.jobs,
-      preview.skippedJobs,
-      startedAt,
-    );
+    const run = await runCollection('manual', company.id);
+    const result = run.companies[0];
+    if (!result || result.status !== 'success') throw new PersistedJobDataError();
     revalidatePath('/');
     revalidatePath('/jobs');
     revalidatePath(`/companies/${company.id}/jobs-preview`);
-    return { status: 'success', message: 'Collected jobs saved.', result };
+    return {
+      status: 'success',
+      message: 'Collected jobs saved.',
+      result: {
+        ...result,
+        companyId: company.id,
+        provider: 'greenhouse',
+        startedAt,
+        completedAt: run.finishedAt,
+        jobs: [],
+      },
+    };
   } catch (error) {
     if (
       error instanceof GreenhouseError ||

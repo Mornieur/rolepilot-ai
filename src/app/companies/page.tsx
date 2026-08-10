@@ -2,11 +2,16 @@ import Link from 'next/link';
 
 import { CompanyManager } from '@/features/companies/components/company-manager';
 import { loadTargetCompanies } from '@/features/companies/server/load-companies';
+import { getLatestCollectionRun } from '@/features/job-collection/server/collection-runs';
+import { CollectionControl } from '@/features/job-collection/components/collection-control';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CompaniesPage() {
-  const result = await loadTargetCompanies();
+  const [result, lastRun] = await Promise.all([
+    loadTargetCompanies(),
+    getLatestCollectionRun().catch(() => null),
+  ]);
   if (result.error !== null)
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -22,5 +27,12 @@ export default async function CompaniesPage() {
         </div>
       </main>
     );
-  return <CompanyManager companies={result.companies} />;
+  return (
+    <>
+      <CompanyManager companies={result.companies} />
+      <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-8">
+        <CollectionControl lastRun={lastRun} />
+      </div>
+    </>
+  );
 }
