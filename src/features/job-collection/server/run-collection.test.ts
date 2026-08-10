@@ -111,4 +111,23 @@ describe('runCollection', () => {
       malformed: 6,
     });
   });
+  it('records an immediate identical recollection as unchanged in collection history', async () => {
+    deps.companies.mockResolvedValue([greenhouse]);
+    deps.persist.mockResolvedValue({
+      discovered: 253,
+      created: 0,
+      updated: 0,
+      unchanged: 253,
+      malformed: 0,
+      skipped: 0,
+    });
+
+    const result = await runCollection('scheduled');
+
+    expect(result).toMatchObject({ created: 0, updated: 0, unchanged: 253, malformed: 0 });
+    expect(deps.finish).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ created: 0, updated: 0, unchanged: 253, malformed: 0 }),
+    );
+  });
 });

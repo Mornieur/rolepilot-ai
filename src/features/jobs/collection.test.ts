@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { collectionStatus, normalizeSourceArray, sourceIdentity } from './collection';
+import {
+  collectionStatus,
+  hasSourceJobChanged,
+  normalizeSourceArray,
+  sourceIdentity,
+} from './collection';
 import type { ExternalJobPreview } from '@/features/job-sources/greenhouse/types';
 import type { PersistedJob } from '@/types/domain';
 
@@ -35,9 +40,23 @@ describe('job collection comparison', () => {
     expect(
       collectionStatus(persisted, { ...preview, departments: ['Platform', 'Engineering'] }),
     ).toBe('unchanged');
-    expect(collectionStatus(persisted, { ...preview, title: 'Senior Engineer' })).toBe('updated');
-    expect(collectionStatus(persisted, { ...preview, location: 'Berlin' })).toBe('updated');
-    expect(collectionStatus(persisted, { ...preview, descriptionText: 'Changed' })).toBe('updated');
+    expect(
+      collectionStatus(persisted, {
+        ...preview,
+        sourceUpdatedAt: '2026-01-01T00:00:00+00:00',
+      }),
+    ).toBe('unchanged');
+  });
+  it.each([
+    ['title', { title: 'Senior Engineer' }],
+    ['description', { descriptionText: 'Changed' }],
+    ['location', { location: 'Berlin' }],
+    ['departments', { departments: ['Engineering', 'Infrastructure'] }],
+    ['offices', { offices: ['Rio de Janeiro'] }],
+    ['source timestamp', { sourceUpdatedAt: '2026-01-02T00:00:00Z' }],
+  ])('detects a material %s change', (_field, change) => {
+    expect(hasSourceJobChanged(persisted, { ...preview, ...change })).toBe(true);
+    expect(collectionStatus(persisted, { ...preview, ...change })).toBe('updated');
   });
   it('normalizes array order and duplicates', () =>
     expect(normalizeSourceArray(['B', 'A', 'A', ' '])).toEqual(['A', 'B']));

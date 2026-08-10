@@ -133,6 +133,40 @@ describe('persistCollectedJobs lifecycle persistence', () => {
   });
 
   it.each([
+    ['title', { title: 'Senior Role' }, { title: 'Senior Role' }],
+    [
+      'description',
+      { descriptionText: 'Updated description' },
+      { description_text: 'Updated description' },
+    ],
+    ['location', { location: 'Remote' }, { location: 'Remote' }],
+    [
+      'departments',
+      { departments: ['Engineering', 'Platform'] },
+      { departments: ['Engineering', 'Platform'] },
+    ],
+    ['offices', { offices: ['Sao Paulo'] }, { offices: ['Sao Paulo'] }],
+    [
+      'source timestamp',
+      { sourceUpdatedAt: '2026-08-11T00:00:00.000Z' },
+      { source_updated_at: '2026-08-11T00:00:00.000Z' },
+    ],
+  ])('persists a material %s change as updated', async (_field, change, persistedChanges) => {
+    database.jobs = [existingJob()];
+
+    const result = await persistCollectedJobs(
+      'company-1',
+      [{ ...preview, ...change }],
+      0,
+      '2026-08-10T00:00:00.000Z',
+    );
+
+    expect(result).toMatchObject({ created: 0, updated: 1, unchanged: 0 });
+    expect(database.inserts).toBe(0);
+    expect(database.updates[0]).toMatchObject({ id: 'job-1', values: persistedChanges });
+  });
+
+  it.each([
     [0, 1, true],
     [1, 2, true],
     [2, 3, false],
