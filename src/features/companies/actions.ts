@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requirePersonalAccess } from '@/lib/personal-access-server';
 
 import {
   parseTargetCompanyFormData,
@@ -38,6 +39,7 @@ export async function createTargetCompanyAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
+  await requirePersonalAccess();
   const parsed = parseTargetCompanyFormData(formData);
   if (!parsed.success) return validationState(parsed.error);
   try {
@@ -53,6 +55,7 @@ export async function updateTargetCompanyAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
+  await requirePersonalAccess();
   const id = targetCompanyIdSchema.safeParse(formData.get('id'));
   const parsed = parseTargetCompanyFormData(formData);
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };
@@ -70,6 +73,7 @@ export async function deleteTargetCompanyAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
+  await requirePersonalAccess();
   const id = targetCompanyIdSchema.safeParse(formData.get('id'));
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };
   try {
@@ -85,6 +89,7 @@ export async function setTargetCompanyEnabledAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
+  await requirePersonalAccess();
   const id = targetCompanyIdSchema.safeParse(formData.get('id'));
   const enabled = formData.get('enabled') === 'true';
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };

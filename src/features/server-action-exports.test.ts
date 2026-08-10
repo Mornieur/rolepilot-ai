@@ -7,6 +7,7 @@ const modules = [
   () => import('@/features/companies/actions'),
   () => import('@/features/job-actions/actions'),
   () => import('@/features/ai-job-analysis/actions'),
+  () => import('@/features/job-collection/actions'),
   () => import('@/features/job-sources/greenhouse/actions'),
 ];
 

@@ -126,7 +126,7 @@ Job sources → collection → normalization → deduplication → deterministic
 
 ## Security limitation
 
-There is no authentication or authorization. This version is intended only as a personal/local MVP and must not be presented as a secure multi-user deployment. Database writes are validated and remain in server actions; the Supabase service-role key never reaches client components.
+There is no user authentication or authorization. This version is intended only as a personal/local MVP and must not be presented as a secure multi-user deployment. A temporary server-side HTTP Basic personal access gate can protect a deployment while the scheduler is validated; it is not a replacement for Supabase Auth, ownership, or RLS. Database writes are validated and remain in server actions; the Supabase service-role key never reaches client components. See [deployment steps](docs/deployment/DEPLOYMENT.md).
 
 ## Current limitations
 

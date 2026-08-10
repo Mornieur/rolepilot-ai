@@ -10,6 +10,7 @@ import { fetchGreenhouseJobs } from '@/features/job-sources/greenhouse/client';
 import { PersistedJobDataError } from '@/features/jobs/server/persisted-jobs';
 import { runCollection } from '@/features/job-collection/server/run-collection';
 import { revalidatePath } from 'next/cache';
+import { requirePersonalAccess } from '@/lib/personal-access-server';
 import type {
   GreenhouseCollectionActionState,
   GreenhousePreviewActionState,
@@ -19,6 +20,7 @@ export async function previewGreenhouseJobsAction(
   _: GreenhousePreviewActionState,
   formData: FormData,
 ): Promise<GreenhousePreviewActionState> {
+  await requirePersonalAccess();
   const id = targetCompanyIdSchema.safeParse(formData.get('companyId'));
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };
   try {
@@ -65,6 +67,7 @@ export async function saveGreenhouseJobsAction(
   _: GreenhouseCollectionActionState,
   formData: FormData,
 ): Promise<GreenhouseCollectionActionState> {
+  await requirePersonalAccess();
   const id = targetCompanyIdSchema.safeParse(formData.get('companyId'));
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };
   const startedAt = new Date().toISOString();
