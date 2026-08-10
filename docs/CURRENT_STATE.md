@@ -25,7 +25,7 @@ The evaluation route prioritizes compact compatible opportunities, with score, w
 
 ## Not implemented
 
-Automatic learning, Lever collection, notification delivery channels, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications. A temporary server-side personal access gate protects a deployed MVP UI; it is not user authentication or RLS.
+Automatic learning, Lever collection, notification delivery channels, and analytics are not implemented. Supabase Auth, ownership, RLS, and server authorization are implemented in code but require the documented staged production rollout and explicit profile backfill. Job actions do not trigger AI, notifications, or automatic applications. The temporary server-side personal access gate remains enabled during this transition.
 
 ## Scheduled collection foundation
 

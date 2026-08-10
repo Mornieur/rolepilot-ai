@@ -6,10 +6,12 @@ import { getLatestCollectionRun } from '@/features/job-collection/server/collect
 import { CollectionControl } from '@/features/job-collection/components/collection-control';
 import { NotificationCandidatesSummary } from '@/features/job-notifications/components/notification-candidates-summary';
 import { listRecentJobNotificationEvents } from '@/features/job-notifications/server/job-notification-events';
+import { requireAdmin, requirePageUser } from '@/features/auth/server/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CompaniesPage() {
+  requireAdmin(await requirePageUser());
   const [result, lastRun, notificationEvents] = await Promise.all([
     loadTargetCompanies(),
     getLatestCollectionRun().catch(() => null),

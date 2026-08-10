@@ -7,13 +7,14 @@ import {
   JobAiAnalysisDataError,
   persistSuccessfulAiAnalysis,
 } from '@/features/ai-job-analysis/server/job-ai-analyses';
-import { requirePersonalAccess } from '@/lib/personal-access-server';
+import { AuthorizationError, requireCurrentUser } from '@/features/auth/server/auth';
+import { getSupabaseServerClient } from '@/features/profiles/server/supabase';
 const ids = z.object({ profileId: z.string().uuid(), jobId: z.string().uuid() });
 export async function analyzeJobAction(
   _: AiAnalysisActionState,
   formData: FormData,
 ): Promise<AiAnalysisActionState> {
-  await requirePersonalAccess();
+  const user = await requireCurrentUser();
   const parsed = ids.safeParse({
     profileId: formData.get('profileId'),
     jobId: formData.get('jobId'),
@@ -21,6 +22,13 @@ export async function analyzeJobAction(
   if (!parsed.success)
     return { status: 'error', message: 'Não foi possível identificar o perfil ou a vaga.' };
   try {
+    const ownership = await getSupabaseServerClient()
+      .from('candidate_profiles')
+      .select('user_id')
+      .eq('id', parsed.data.profileId)
+      .maybeSingle();
+    if (!ownership.data || (user.role !== 'admin' && ownership.data.user_id !== user.id))
+      throw new AuthorizationError();
     const generated = await generateEligibleJobAnalysis(parsed.data.profileId, parsed.data.jobId);
     return { status: 'success', analysis: await persistSuccessfulAiAnalysis(generated) };
   } catch (error) {

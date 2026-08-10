@@ -10,6 +10,7 @@ import type { PersistedAiJobAnalysis } from '@/features/ai-job-analysis/types';
 import { listLatestAiAnalysesForJobs } from '@/features/ai-job-analysis/server/job-ai-analyses';
 import { getAiAnalysisInputFingerprint } from '@/features/ai-job-analysis/fingerprint';
 import type { JobUserStatus } from '@/types/domain';
+import { requirePageUser } from '@/features/auth/server/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,9 +19,10 @@ export default async function EvaluateJobsPage({
 }: {
   searchParams: Promise<{ profileId?: string }>;
 }) {
+  const currentUser = await requirePageUser();
   const [{ profileId }, profiles, companies] = await Promise.all([
     searchParams,
-    loadCandidateProfiles(),
+    loadCandidateProfiles(currentUser),
     loadTargetCompanies(),
   ]);
   if (profiles.error || !profiles.profiles)

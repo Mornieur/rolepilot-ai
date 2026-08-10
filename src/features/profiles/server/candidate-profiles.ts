@@ -8,6 +8,7 @@ import {
   toCandidateProfileInsert,
 } from '@/features/profiles/server/profile-mapper';
 import { getSupabaseServerClient } from '@/features/profiles/server/supabase';
+import type { CurrentUser } from '@/features/auth/server/auth';
 
 export class CandidateProfileDataError extends Error {
   constructor(message = 'Candidate profiles are unavailable right now. Please try again.') {
@@ -30,6 +31,16 @@ export async function listCandidateProfiles(): Promise<CandidateProfile[]> {
   return data.map(toCandidateProfile);
 }
 
+export async function listCandidateProfilesForUser(user: CurrentUser): Promise<CandidateProfile[]> {
+  const query = getSupabaseServerClient()
+    .from('candidate_profiles')
+    .select('*')
+    .order('created_at');
+  const { data, error } = user.role === 'admin' ? await query : await query.eq('user_id', user.id);
+  if (error) throwDataError('list for user');
+  return (data ?? []).map(toCandidateProfile);
+}
+
 export async function getCandidateProfileById(id: string): Promise<CandidateProfile | null> {
   const { data, error } = await getSupabaseServerClient()
     .from('candidate_profiles')
@@ -42,10 +53,11 @@ export async function getCandidateProfileById(id: string): Promise<CandidateProf
 
 export async function createCandidateProfile(
   input: CandidateProfileInput,
+  userId: string,
 ): Promise<CandidateProfile> {
   const { data, error } = await getSupabaseServerClient()
     .from('candidate_profiles')
-    .insert(toCandidateProfileInsert(input))
+    .insert({ ...toCandidateProfileInsert(input), user_id: userId })
     .select()
     .single();
   if (error || !data) throwDataError('create');

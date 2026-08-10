@@ -13,6 +13,7 @@ import {
   JobInsightsDataError,
   loadJobInsights,
 } from '@/features/job-insights/server/load-job-insights';
+import { requirePageUser } from '@/features/auth/server/auth';
 
 export const dynamic = 'force-dynamic';
 export default async function InsightsPage({
@@ -20,7 +21,8 @@ export default async function InsightsPage({
 }: {
   searchParams: Promise<{ profileId?: string; period?: string; scope?: string }>;
 }) {
-  const [params, profiles] = await Promise.all([searchParams, loadCandidateProfiles()]);
+  const currentUser = await requirePageUser();
+  const [params, profiles] = await Promise.all([searchParams, loadCandidateProfiles(currentUser)]);
   if (profiles.error || !profiles.profiles)
     return (
       <PageContainer>

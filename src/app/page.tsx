@@ -6,12 +6,14 @@ import { loadPersistedJobs } from '@/features/jobs/server/load-jobs';
 import { listStatusCountsByProfile } from '@/features/job-actions/server/job-statuses';
 import type { JobUserStatus } from '@/types/domain';
 import Link from 'next/link';
+import { requirePageUser } from '@/features/auth/server/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  const currentUser = await requirePageUser();
   const [profileResult, companyResult, persistedJobs] = await Promise.all([
-    loadCandidateProfiles(),
+    loadCandidateProfiles(currentUser),
     loadTargetCompanies(),
     loadPersistedJobs(),
   ]);

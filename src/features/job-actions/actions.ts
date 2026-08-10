@@ -3,13 +3,14 @@ import { JobStatusDataError, saveStatus } from '@/features/job-actions/server/jo
 import { jobStatusInputSchema } from '@/features/job-actions/schema';
 import { getCandidateProfileById } from '@/features/profiles/server/candidate-profiles';
 import { getPersistedJobById } from '@/features/jobs/server/persisted-jobs';
-import { requirePersonalAccess } from '@/lib/personal-access-server';
+import { AuthorizationError, requireCurrentUser } from '@/features/auth/server/auth';
+import { getSupabaseServerClient } from '@/features/profiles/server/supabase';
 import type { JobStatusActionState } from '@/features/job-actions/action-state';
 export async function saveJobStatusAction(
   _: JobStatusActionState,
   formData: FormData,
 ): Promise<JobStatusActionState> {
-  await requirePersonalAccess();
+  const user = await requireCurrentUser();
   const parsed = jobStatusInputSchema.safeParse({
     profileId: formData.get('profileId'),
     jobId: formData.get('jobId'),
@@ -24,6 +25,13 @@ export async function saveJobStatusAction(
     ]);
     if (!profile || !job)
       return { status: 'error', message: 'O perfil ou a vaga não foi encontrado.' };
+    const ownership = await getSupabaseServerClient()
+      .from('candidate_profiles')
+      .select('user_id')
+      .eq('id', parsed.data.profileId)
+      .maybeSingle();
+    if (!ownership.data || (user.role !== 'admin' && ownership.data.user_id !== user.id))
+      throw new AuthorizationError();
     const result = await saveStatus(
       parsed.data.profileId,
       parsed.data.jobId,
