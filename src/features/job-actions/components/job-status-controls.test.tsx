@@ -27,6 +27,13 @@ describe('JobStatusControls', () => {
     ui.action.mockReset();
   });
 
+  it('shows an unselected initial state with accessible action buttons', () => {
+    render(<JobStatusControls profileId="profile" jobId="job" />);
+    for (const name of ['Salvar', 'Ignorar', 'Candidatada', 'Rejeitada']) {
+      expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
+    }
+  });
+
   it('shows the current status with accessible action buttons and pressed state', () => {
     render(<JobStatusControls profileId="profile" jobId="job" currentStatus="applied" />);
     expect(screen.getByRole('status')).toHaveTextContent('Estado atual: candidatada');
@@ -49,7 +56,7 @@ describe('JobStatusControls', () => {
     rerender(<JobStatusControls profileId="profile" jobId="job" />);
     expect(screen.getByText('Decisão salva.')).toBeInTheDocument();
     expect(screen.getAllByRole('status')[0]).toHaveTextContent('Estado atual: salva');
-    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '✓ Salva' })).toHaveAttribute('aria-pressed', 'true');
 
     ui.state = { status: 'error', message: 'Não foi possível salvar a decisão.' };
     rerender(<JobStatusControls profileId="profile" jobId="job" />);
@@ -70,14 +77,27 @@ describe('JobStatusControls', () => {
     expect(formData.get('status')).toBe('saved');
   });
 
+  it.each([
+    ['saved', '✓ Salva'],
+    ['ignored', 'Ignorada'],
+    ['applied', 'Candidatada'],
+    ['rejected', 'Rejeitada'],
+  ])('renders a server-loaded %s state as selected', (status, label) => {
+    render(<JobStatusControls profileId="profile" jobId="job" currentStatus={status} />);
+    expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('renders a server-loaded saved state and allows switching to ignored', () => {
     const { rerender } = render(
       <JobStatusControls profileId="profile" jobId="job" currentStatus="saved" />,
     );
-    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '✓ Salva' })).toHaveAttribute('aria-pressed', 'true');
 
     ui.state = { status: 'success', current: 'ignored', message: 'Decisão salva.' };
     rerender(<JobStatusControls profileId="profile" jobId="job" currentStatus="saved" />);
-    expect(screen.getByRole('button', { name: 'Ignorar' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Ignorada' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 });

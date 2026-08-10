@@ -6,6 +6,18 @@ import { analyzeJobAction } from '@/features/ai-job-analysis/actions';
 import { initialAiAnalysisActionState } from '@/features/ai-job-analysis/action-state';
 import type { PersistedAiJobAnalysis } from '@/features/ai-job-analysis/types';
 
+const recommendationLabels = {
+  strong_apply: 'Candidatar-se com prioridade',
+  apply: 'Candidatar-se',
+  consider: 'Considerar',
+  skip: 'Não recomendar',
+} as const;
+const confidenceLabels = {
+  low: 'baixa',
+  medium: 'média',
+  high: 'alta',
+} as const;
+
 export function AiAnalysisCard({
   profileId,
   jobId,
@@ -35,7 +47,8 @@ export function AiAnalysisCard({
         <div className="mt-3 text-sm">
           <p role="status">Análise salva: {displayed.stale ? 'desatualizada' : 'atual'}.</p>
           <p className="mt-1 font-medium">
-            {displayed.analysis.recommendation} · confiança {displayed.analysis.confidence}
+            {recommendationLabels[displayed.analysis.recommendation]} · confiança{' '}
+            {confidenceLabels[displayed.analysis.confidence]}
           </p>
           <p className="mt-1 break-words">{displayed.analysis.summary}</p>
           <p className="mt-2">
@@ -55,7 +68,7 @@ export function AiAnalysisCard({
           <List
             title="Lacunas"
             items={displayed.analysis.gaps.map(
-              (item) => `${item.title} (${item.severity}): ${item.explanation}`,
+              (item) => `${item.title} (${confidenceLabels[item.severity]}): ${item.explanation}`,
             )}
           />
         </div>

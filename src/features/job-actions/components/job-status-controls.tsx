@@ -22,6 +22,12 @@ export function JobStatusControls({
     applied: 'Candidatada',
     rejected: 'Rejeitada',
   } as const;
+  const selectedLabels = {
+    saved: '✓ Salva',
+    ignored: 'Ignorada',
+    applied: 'Candidatada',
+    rejected: 'Rejeitada',
+  } as const;
   const stateLabels = {
     new: 'nova',
     saved: 'salva',
@@ -49,7 +55,9 @@ export function JobStatusControls({
             variant={current === status ? 'primary' : 'secondary'}
             className="capitalize"
           >
-            {labels[status as keyof typeof labels]}
+            {current === status
+              ? selectedLabels[status as keyof typeof selectedLabels]
+              : labels[status as keyof typeof labels]}
           </Button>
         ))}
       </div>

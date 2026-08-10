@@ -30,6 +30,16 @@ function rejectionExpectedCategory(issue: { code: string; expected?: unknown } |
   return typeof issue.expected === 'string' ? issue.expected : issue.code;
 }
 
+function stringConstraintMetadata(issue: { code: string } | undefined, value: unknown) {
+  if (!issue || typeof value !== 'string') return {};
+  const issueDetails = issue as Record<string, unknown>;
+  if (issue.code === 'too_small' && typeof issueDetails.minimum === 'number')
+    return { minLength: issueDetails.minimum, actualLength: value.length };
+  if (issue.code === 'too_big' && typeof issueDetails.maximum === 'number')
+    return { maxLength: issueDetails.maximum, actualLength: value.length };
+  return {};
+}
+
 function isMaxTokenResponse(response: unknown) {
   const finishReason = (response as { candidates?: { finishReason?: unknown }[] }).candidates?.[0]
     ?.finishReason;
@@ -42,6 +52,9 @@ function logStructuredRejection(input: {
   fieldPath?: string;
   expected?: string;
   actual?: string;
+  minLength?: number;
+  maxLength?: number;
+  actualLength?: number;
 }) {
   console.warn(
     [
@@ -50,6 +63,9 @@ function logStructuredRejection(input: {
       `path=${input.fieldPath ?? 'root'}`,
       input.expected ? `expected=${input.expected}` : null,
       input.actual ? `actual=${input.actual}` : null,
+      input.minLength !== undefined ? `minLength=${input.minLength}` : null,
+      input.maxLength !== undefined ? `maxLength=${input.maxLength}` : null,
+      input.actualLength !== undefined ? `actualLength=${input.actualLength}` : null,
       `schema=${AI_JOB_ANALYSIS_SCHEMA_VERSION}`,
       `model=${input.model}`,
     ]
@@ -112,11 +128,13 @@ export async function generateEligibleJobAnalysis(
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const rejection = classifyAiAnalysisValidationFailure(parsed.error, output);
+      const actualValue = valueAtPath(output, issue?.path ?? []);
       logStructuredRejection({
         classification: rejection.classification,
         fieldPath: rejection.fieldPath,
         expected: rejectionExpectedCategory(issue),
-        actual: jsonValueCategory(valueAtPath(output, issue?.path ?? [])),
+        actual: jsonValueCategory(actualValue),
+        ...stringConstraintMetadata(issue, actualValue),
         model,
       });
       throw aiError.invalid();

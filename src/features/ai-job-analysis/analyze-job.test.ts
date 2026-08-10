@@ -76,7 +76,11 @@ describe('Gemini job analysis boundary', () => {
     expect(generateContent).toHaveBeenCalledOnce();
     expect(generateContent.mock.calls[0][0]).toMatchObject({
       model: 'gemini-2.5-flash-lite',
-      config: { responseMimeType: 'application/json', maxOutputTokens: 700 },
+      config: {
+        responseMimeType: 'application/json',
+        maxOutputTokens: 700,
+        systemInstruction: expect.stringContaining('600 characters'),
+      },
     });
   });
   it('uses configured model and maps malformed output safely', async () => {
@@ -121,6 +125,22 @@ describe('Gemini job analysis boundary', () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('schema=1 model='));
     expect(warn.mock.calls.flat().join(' ')).not.toContain('Missing severity');
   });
+  it.each([
+    ['too-short string', '', 'string_too_short', 'minLength=1', 'actualLength=0'],
+    ['too-long string', 'x'.repeat(601), 'string_too_long', 'maxLength=600', 'actualLength=601'],
+  ])(
+    'logs safe summary length metadata for a %s rejection',
+    async (_name, summary, classification, bound, actualLength) => {
+      generateContent.mockResolvedValue({ text: JSON.stringify({ ...valid, summary }) });
+      await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow();
+      const diagnostic = warn.mock.calls.flat().join(' ');
+      expect(diagnostic).toContain(`classification=${classification}`);
+      expect(diagnostic).toContain('path=summary');
+      expect(diagnostic).toContain(bound);
+      expect(diagnostic).toContain(actualLength);
+      if (summary) expect(diagnostic).not.toContain(summary);
+    },
+  );
   it('classifies max-token malformed output as incomplete without logging the raw response', async () => {
     generateContent.mockResolvedValue({ text: '{', candidates: [{ finishReason: 'MAX_TOKENS' }] });
     await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow();
