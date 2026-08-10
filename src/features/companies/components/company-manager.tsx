@@ -6,11 +6,13 @@ import { useActionState, useState } from 'react';
 import {
   createTargetCompanyAction,
   deleteTargetCompanyAction,
-  initialCompanyActionState,
   setTargetCompanyEnabledAction,
-  type CompanyActionState,
   updateTargetCompanyAction,
 } from '@/features/companies/actions';
+import {
+  initialCompanyActionState,
+  type CompanyActionState,
+} from '@/features/companies/action-state';
 import type { CompanyPriority, JobSourceProvider, TargetCompany } from '@/types/domain';
 import { Surface } from '@feitoza-ui/core';
 

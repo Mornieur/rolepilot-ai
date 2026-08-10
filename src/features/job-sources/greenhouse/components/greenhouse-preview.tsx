@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 
 import {
-  initialGreenhouseCollectionState,
-  initialGreenhousePreviewState,
   previewGreenhouseJobsAction,
   saveGreenhouseJobsAction,
-  type GreenhousePreviewActionState,
 } from '@/features/job-sources/greenhouse/actions';
+import {
+  initialGreenhouseCollectionState,
+  initialGreenhousePreviewState,
+  type GreenhousePreviewActionState,
+} from '@/features/job-sources/greenhouse/action-state';
 import { shortenPreview } from '@/features/job-sources/greenhouse/description';
 import type { ExternalJobPreview } from '@/features/job-sources/greenhouse/types';
 import type { TargetCompany } from '@/types/domain';

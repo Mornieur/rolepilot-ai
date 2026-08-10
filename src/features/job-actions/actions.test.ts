@@ -16,7 +16,8 @@ vi.mock('@/features/profiles/server/candidate-profiles', () => ({
 vi.mock('@/features/jobs/server/persisted-jobs', () => ({ getPersistedJobById: dependencies.job }));
 vi.mock('next/cache', () => ({ revalidatePath: dependencies.revalidate }));
 
-import { initialJobStatusActionState, saveJobStatusAction } from './actions';
+import { saveJobStatusAction } from './actions';
+import { initialJobStatusActionState } from './action-state';
 
 const profileId = '11111111-1111-4111-8111-111111111111';
 const jobId = '22222222-2222-4222-8222-222222222222';

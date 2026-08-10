@@ -6,10 +6,12 @@ import Link from 'next/link';
 import {
   createCandidateProfileAction,
   deleteCandidateProfileAction,
-  initialProfileActionState,
-  type ProfileActionState,
   updateCandidateProfileAction,
 } from '@/features/profiles/actions';
+import {
+  initialProfileActionState,
+  type ProfileActionState,
+} from '@/features/profiles/action-state';
 import { canDeleteCandidateProfile } from '@/features/profiles/profile-policy';
 import type { CandidateProfile, Seniority, WorkModel } from '@/types/domain';
 import { Surface } from '@feitoza-ui/core';

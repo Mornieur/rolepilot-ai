@@ -12,13 +12,7 @@ import {
   deleteCandidateProfile,
   updateCandidateProfile,
 } from '@/features/profiles/server/candidate-profiles';
-
-export type ProfileActionState = {
-  status: 'idle' | 'success' | 'error';
-  message?: string;
-  fieldErrors?: Record<string, string[] | undefined>;
-};
-export const initialProfileActionState: ProfileActionState = { status: 'idle' };
+import type { ProfileActionState } from '@/features/profiles/action-state';
 
 function validationState(error: {
   flatten: () => { fieldErrors: Record<string, string[] | undefined> };

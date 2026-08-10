@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/companies/actions', () => ({
-  initialCompanyActionState: { status: 'idle' },
   createTargetCompanyAction: vi.fn(),
   updateTargetCompanyAction: vi.fn(),
   deleteTargetCompanyAction: vi.fn(),

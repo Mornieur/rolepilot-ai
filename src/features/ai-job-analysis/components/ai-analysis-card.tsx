@@ -2,7 +2,8 @@
 
 import { useActionState } from 'react';
 import { Button, Surface } from '@feitoza-ui/core';
-import { analyzeJobAction, initialAiAnalysisActionState } from '@/features/ai-job-analysis/actions';
+import { analyzeJobAction } from '@/features/ai-job-analysis/actions';
+import { initialAiAnalysisActionState } from '@/features/ai-job-analysis/action-state';
 import type { PersistedAiJobAnalysis } from '@/features/ai-job-analysis/types';
 
 export function AiAnalysisCard({

@@ -6,8 +6,6 @@ const { previewAction, saveAction } = vi.hoisted(() => ({
   saveAction: vi.fn(),
 }));
 vi.mock('@/features/job-sources/greenhouse/actions', () => ({
-  initialGreenhousePreviewState: { status: 'idle' },
-  initialGreenhouseCollectionState: { status: 'idle' },
   previewGreenhouseJobsAction: previewAction,
   saveGreenhouseJobsAction: saveAction,
 }));
