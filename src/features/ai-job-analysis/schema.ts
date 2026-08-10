@@ -26,6 +26,7 @@ export const aiJobAnalysisSchema = z.object({
 });
 export type InvalidAiAnalysisClassification =
   | 'invalid_json'
+  | 'incomplete_output'
   | 'missing_field'
   | 'invalid_enum'
   | 'invalid_type'
@@ -34,6 +35,21 @@ export type InvalidAiAnalysisClassification =
   | 'deterministic_score_mismatch'
   | 'schema_validation_failed';
 
+export function jsonValueCategory(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+export function valueAtPath(value: unknown, path: PropertyKey[]): unknown {
+  let current = value;
+  for (const key of path) {
+    if (!current || typeof current !== 'object' || !Object.hasOwn(current, key)) return undefined;
+    current = (current as Record<PropertyKey, unknown>)[key];
+  }
+  return current;
+}
+
 export function classifyAiAnalysisValidationFailure(
   error: z.ZodError,
   value?: unknown,
@@ -41,12 +57,7 @@ export function classifyAiAnalysisValidationFailure(
   const issue = error.issues[0];
   const fieldPath = issue?.path.join('.') || 'root';
   const pathIsMissing = (path: PropertyKey[]) => {
-    let current: unknown = value;
-    for (const key of path) {
-      if (!current || typeof current !== 'object' || !Object.hasOwn(current, key)) return true;
-      current = (current as Record<PropertyKey, unknown>)[key];
-    }
-    return false;
+    return valueAtPath(value, path) === undefined;
   };
   if (issue && pathIsMissing(issue.path)) return { classification: 'missing_field', fieldPath };
   if (issue?.code === 'invalid_type' && /undefined|required/i.test(issue.message))

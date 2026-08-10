@@ -17,23 +17,31 @@ function List({ title, items }: { title: string; items: RankedInsight[] }) {
           ))}
         </ol>
       ) : (
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">No data in this sample.</p>
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">Sem dados nesta amostra.</p>
       )}
     </Card>
   );
 }
-export function InsightsDashboard({ insight }: { insight: JobInsightResult }) {
+export function InsightsDashboard({
+  insight,
+  scope = 'all',
+}: {
+  insight: JobInsightResult;
+  scope?: 'all' | 'relevant';
+}) {
   const warning =
     insight.sampleSize < 10
-      ? 'Very small sample: interpret these descriptive counts with caution.'
+      ? 'Amostra muito pequena: interprete estas contagens descritivas com cautela.'
       : insight.sampleSize < 30
-        ? 'Limited sample: interpret these descriptive counts with caution.'
+        ? 'Amostra limitada: interprete estas contagens descritivas com cautela.'
         : null;
   return (
     <div className="mt-8">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        Based only on {insight.sampleSize} collected jobs. Decisions are specific to{' '}
-        {insight.profile.name}.
+        {scope === 'relevant'
+          ? `Com base em ${insight.sampleSize} vagas compatíveis com este perfil.`
+          : `Com base em ${insight.sampleSize} vagas coletadas.`}{' '}
+        As decisões são específicas de {insight.profile.name}.
       </p>
       {warning && (
         <p
@@ -47,30 +55,33 @@ export function InsightsDashboard({ insight }: { insight: JobInsightResult }) {
         className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
         aria-label="Insight summary"
       >
-        <InsightMetricCard label="Collected jobs" value={insight.sampleSize} />
-        <InsightMetricCard label="Saved" value={insight.statuses.saved} />
-        <InsightMetricCard label="Applied" value={insight.statuses.applied} />
-        <InsightMetricCard label="No decision" value={insight.statuses.new} />
-        <InsightMetricCard label="Save rate" value={percent(insight.saveRate)} />
-        <InsightMetricCard label="Application rate" value={percent(insight.applicationRate)} />
-        <InsightMetricCard label="Ignored" value={insight.statuses.ignored} />
-        <InsightMetricCard label="Rejected" value={insight.statuses.rejected} />
+        <InsightMetricCard
+          label={scope === 'relevant' ? 'Vagas compatíveis' : 'Vagas coletadas'}
+          value={insight.sampleSize}
+        />
+        <InsightMetricCard label="Salvas" value={insight.statuses.saved} />
+        <InsightMetricCard label="Candidatadas" value={insight.statuses.applied} />
+        <InsightMetricCard label="Sem decisão" value={insight.statuses.new} />
+        <InsightMetricCard label="Taxa de salvamento" value={percent(insight.saveRate)} />
+        <InsightMetricCard label="Taxa de candidatura" value={percent(insight.applicationRate)} />
+        <InsightMetricCard label="Ignoradas" value={insight.statuses.ignored} />
+        <InsightMetricCard label="Rejeitadas" value={insight.statuses.rejected} />
       </section>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <List title="Companies with most collected jobs" items={insight.companies} />
-        <List title="Most recurring titles" items={insight.titles} />
-        <List title="Locations in the collected sample" items={insight.locations} />
-        <List title="Work model in the collected sample" items={insight.workModels} />
-        <List title="Seniority in the collected sample" items={insight.seniorities} />
-        <List title="Providers" items={insight.providers} />
-        <List title="Profile terms found in the sample" items={insight.profileTerms.found} />
-        <List title="Profile terms in saved jobs" items={insight.profileTerms.saved} />
-        <List title="Profile terms in applied jobs" items={insight.profileTerms.applied} />
-        <List title="Profile terms in ignored jobs" items={insight.profileTerms.ignored} />
+        <List title="Empresas com mais vagas coletadas" items={insight.companies} />
+        <List title="Cargos mais recorrentes" items={insight.titles} />
+        <List title="Localizações na amostra" items={insight.locations} />
+        <List title="Modelos de trabalho na amostra" items={insight.workModels} />
+        <List title="Senioridades na amostra" items={insight.seniorities} />
+        <List title="Provedores" items={insight.providers} />
+        <List title="Termos do perfil encontrados" items={insight.profileTerms.found} />
+        <List title="Termos do perfil em vagas salvas" items={insight.profileTerms.saved} />
+        <List title="Termos do perfil em vagas candidatadas" items={insight.profileTerms.applied} />
+        <List title="Termos do perfil em vagas ignoradas" items={insight.profileTerms.ignored} />
       </div>
       {insight.profileTerms.rare.length > 0 && (
         <p className="mt-5 text-sm text-slate-600 dark:text-slate-300">
-          Configured terms not found in this sample: {insight.profileTerms.rare.join(', ')}.
+          Termos configurados não encontrados nesta amostra: {insight.profileTerms.rare.join(', ')}.
         </p>
       )}
     </div>

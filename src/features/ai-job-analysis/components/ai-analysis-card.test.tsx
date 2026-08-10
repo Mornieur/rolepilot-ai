@@ -52,24 +52,24 @@ describe('AiAnalysisCard persisted analysis UI', () => {
   it('shows the manual action when no saved analysis exists', () => {
     useActionState.mockReturnValue([{ status: 'idle' }, vi.fn(), false]);
     renderCard();
-    expect(screen.getByRole('button', { name: 'Analyze with Gemini' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Analisar com Gemini' })).toBeEnabled();
   });
 
   it('renders a current persisted analysis, its textual status, metadata, and all result sections', () => {
     useActionState.mockReturnValue([{ status: 'idle' }, vi.fn(), false]);
     renderCard(latest);
-    expect(screen.getByRole('status')).toHaveTextContent('current');
-    expect(screen.getByText('apply · high confidence')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('atual');
+    expect(screen.getByText('apply · confiança high')).toBeInTheDocument();
     expect(screen.getByText('Persisted summary')).toBeInTheDocument();
     expect(screen.getByText('React: Required skill matched')).toBeInTheDocument();
     expect(screen.getByText('GraphQL (low): Nice to have')).toBeInTheDocument();
     expect(screen.getByText('Timezone overlap')).toBeInTheDocument();
     expect(screen.getByText('Architecture tradeoffs')).toBeInTheDocument();
-    expect(screen.getByText(/Analyzed:/)).toBeInTheDocument();
+    expect(screen.getByText(/Analisada em:/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Provider\/model: gemini \/ gemini-2.5-flash-lite/),
+      screen.getByText(/Provedor\/modelo: gemini \/ gemini-2.5-flash-lite/),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Reanalyze with Gemini' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Reanalisar com Gemini' })).toBeEnabled();
   });
 
   it('keeps stale analysis visible with a textual context-change warning', () => {
@@ -80,15 +80,15 @@ describe('AiAnalysisCard persisted analysis UI', () => {
         .getAllByRole('status')
         .map((node) => node.textContent)
         .join(' '),
-    ).toMatch(/stale/);
-    expect(screen.getByText(/profile or job context changed/)).toBeInTheDocument();
+    ).toMatch(/desatualizada/);
+    expect(screen.getByText(/perfil ou a vaga mudou/)).toBeInTheDocument();
     expect(screen.getByText('Persisted summary')).toBeInTheDocument();
   });
 
   it('uses action state for pending, successful reanalysis, and safe failures without erasing history', () => {
     useActionState.mockReturnValue([{ status: 'idle' }, vi.fn(), true]);
     const pending = renderCard(latest);
-    expect(screen.getByRole('button', { name: 'Analyzing…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Analisando…' })).toBeDisabled();
     pending.unmount();
 
     useActionState.mockReturnValue([

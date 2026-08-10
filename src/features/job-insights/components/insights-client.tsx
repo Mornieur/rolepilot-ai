@@ -20,7 +20,7 @@ export function InsightsFilters({
   scope?: 'all' | 'relevant';
 }) {
   return (
-    <form className="mt-6 flex flex-wrap gap-4">
+    <form method="get" aria-label="Filtros de insights" className="mt-6 flex flex-wrap gap-4">
       <label>
         Perfil
         <Select name="profileId" defaultValue={profileId} className="ml-2">
@@ -32,7 +32,7 @@ export function InsightsFilters({
         </Select>
       </label>
       <label>
-        Vagas
+        Vagas analisadas
         <Select name="scope" defaultValue={scope} className="ml-2">
           <option value="all">Todas coletadas</option>
           <option value="relevant">Compatíveis com o perfil</option>

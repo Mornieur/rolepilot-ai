@@ -12,7 +12,7 @@ vi.mock('@/features/profiles/server/candidate-profiles', () => ({
 vi.mock('@/features/jobs/server/persisted-jobs', () => ({ getPersistedJobById: vi.fn() }));
 vi.mock('@/features/job-evaluation/evaluate', () => ({ evaluateJob: vi.fn() }));
 
-import { analyzeEligibleJob } from './analyze-job';
+import { analyzeEligibleJob, generateEligibleJobAnalysis, resolveGeminiModel } from './analyze-job';
 import { getCandidateProfileById } from '@/features/profiles/server/candidate-profiles';
 import { getPersistedJobById } from '@/features/jobs/server/persisted-jobs';
 import { evaluateJob } from '@/features/job-evaluation/evaluate';
@@ -56,6 +56,7 @@ const valid = {
 
 describe('Gemini job analysis boundary', () => {
   const previous = process.env;
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   beforeEach(() => {
     process.env = { ...previous, GEMINI_API_KEY: 'test-key' };
     vi.clearAllMocks();
@@ -63,6 +64,7 @@ describe('Gemini job analysis boundary', () => {
     vi.mocked(getPersistedJobById).mockResolvedValue(job as never);
     vi.mocked(evaluateJob).mockReturnValue(evaluation as never);
     generateContent.mockResolvedValue({ text: JSON.stringify(valid) });
+    warn.mockClear();
   });
   it('returns controlled configuration error without a key', async () => {
     delete process.env.GEMINI_API_KEY;
@@ -83,6 +85,13 @@ describe('Gemini job analysis boundary', () => {
     await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow('resultado estruturado inválido');
     expect(generateContent.mock.calls[0][0].model).toBe('custom');
   });
+  it('resolves an override before the centralized default and returns the actual model metadata', async () => {
+    process.env.GEMINI_MODEL = 'gemini-test-model';
+    expect(resolveGeminiModel()).toBe('gemini-test-model');
+    await expect(generateEligibleJobAnalysis('p', 'j')).resolves.toMatchObject({
+      model: 'gemini-test-model',
+    });
+  });
   it.each([
     ['empty response', undefined],
     ['missing top-level field', { ...valid, confidence: undefined }],
@@ -100,6 +109,23 @@ describe('Gemini job analysis boundary', () => {
     });
     await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow();
     expect(generateContent).toHaveBeenCalledOnce();
+  });
+  it('logs only safe contract metadata for a structured validation rejection', async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({ ...valid, gaps: [{ title: 'Gap', explanation: 'Missing severity' }] }),
+    });
+    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('classification=missing_field path=gaps.0.severity'),
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('schema=1 model='));
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('Missing severity');
+  });
+  it('classifies max-token malformed output as incomplete without logging the raw response', async () => {
+    generateContent.mockResolvedValue({ text: '{', candidates: [{ finishReason: 'MAX_TOKENS' }] });
+    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('classification=incomplete_output'));
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('{');
   });
   it('does not call Gemini for an ineligible job', async () => {
     vi.mocked(evaluateJob).mockReturnValue({ ...evaluation, eligible: false } as never);

@@ -10,12 +10,53 @@ import {
   aiJobAnalysisJsonSchema,
   aiJobAnalysisSchema,
   classifyAiAnalysisValidationFailure,
+  jsonValueCategory,
+  valueAtPath,
 } from '@/features/ai-job-analysis/schema';
 import { AI_JOB_ANALYSIS_SCHEMA_VERSION } from '@/features/ai-job-analysis/schema';
 import { getAiAnalysisInputFingerprint } from '@/features/ai-job-analysis/fingerprint';
 import type { AiJobAnalysis, GeneratedAiJobAnalysis } from '@/features/ai-job-analysis/types';
 
-const DEFAULT_MODEL = 'gemini-2.5-flash-lite';
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
+
+export function resolveGeminiModel() {
+  return process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
+}
+
+function rejectionExpectedCategory(issue: { code: string; expected?: unknown } | undefined) {
+  if (!issue) return 'schema';
+  if (issue.code === 'invalid_value') return 'enum';
+  if (issue.code === 'too_small' || issue.code === 'too_big') return 'string constraint';
+  return typeof issue.expected === 'string' ? issue.expected : issue.code;
+}
+
+function isMaxTokenResponse(response: unknown) {
+  const finishReason = (response as { candidates?: { finishReason?: unknown }[] }).candidates?.[0]
+    ?.finishReason;
+  return typeof finishReason === 'string' && /max.?tokens|length/i.test(finishReason);
+}
+
+function logStructuredRejection(input: {
+  classification: string;
+  model: string;
+  fieldPath?: string;
+  expected?: string;
+  actual?: string;
+}) {
+  console.warn(
+    [
+      'AI structured result rejected:',
+      `classification=${input.classification}`,
+      `path=${input.fieldPath ?? 'root'}`,
+      input.expected ? `expected=${input.expected}` : null,
+      input.actual ? `actual=${input.actual}` : null,
+      `schema=${AI_JOB_ANALYSIS_SCHEMA_VERSION}`,
+      `model=${input.model}`,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+}
 export async function analyzeEligibleJob(profileId: string, jobId: string): Promise<AiJobAnalysis> {
   return (await generateEligibleJobAnalysis(profileId, jobId)).analysis;
 }
@@ -34,7 +75,7 @@ export async function generateEligibleJobAnalysis(
   const evaluation = evaluateJob(profile, job);
   if (!evaluation.eligible) throw aiError.ineligible();
   const input = shapeAiJobRequest(profile, job, evaluation);
-  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const model = resolveGeminiModel();
   const startedAt = Date.now();
   try {
     const response = await new GoogleGenAI({
@@ -50,19 +91,46 @@ export async function generateEligibleJobAnalysis(
         abortSignal: AbortSignal.timeout(20_000),
       },
     });
-    if (!response.text) throw aiError.refused();
+    if (!response.text) {
+      logStructuredRejection({
+        classification: isMaxTokenResponse(response) ? 'incomplete_output' : 'invalid_json',
+        model,
+      });
+      throw aiError.refused();
+    }
     let output: unknown;
     try {
       output = JSON.parse(response.text);
     } catch {
+      logStructuredRejection({
+        classification: isMaxTokenResponse(response) ? 'incomplete_output' : 'invalid_json',
+        model,
+      });
       throw aiError.invalid();
     }
     const parsed = aiJobAnalysisSchema.safeParse(output);
     if (!parsed.success) {
-      classifyAiAnalysisValidationFailure(parsed.error, output);
+      const issue = parsed.error.issues[0];
+      const rejection = classifyAiAnalysisValidationFailure(parsed.error, output);
+      logStructuredRejection({
+        classification: rejection.classification,
+        fieldPath: rejection.fieldPath,
+        expected: rejectionExpectedCategory(issue),
+        actual: jsonValueCategory(valueAtPath(output, issue?.path ?? [])),
+        model,
+      });
       throw aiError.invalid();
     }
-    if (parsed.data.deterministicAssessment.score !== evaluation.score) throw aiError.invalid();
+    if (parsed.data.deterministicAssessment.score !== evaluation.score) {
+      logStructuredRejection({
+        classification: 'deterministic_score_mismatch',
+        fieldPath: 'deterministicAssessment.score',
+        expected: 'integer matching deterministic score',
+        actual: 'number',
+        model,
+      });
+      throw aiError.invalid();
+    }
     const usage = response.usageMetadata;
     return {
       profileId,

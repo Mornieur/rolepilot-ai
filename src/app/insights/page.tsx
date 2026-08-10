@@ -81,7 +81,11 @@ export default async function InsightsPage({
             </Alert>
           )}
           {insight &&
-            (insight.sampleSize ? <InsightsDashboard insight={insight} /> : <InsightsEmpty />)}
+            (insight.sampleSize ? (
+              <InsightsDashboard insight={insight} scope={scope} />
+            ) : (
+              <InsightsEmpty />
+            ))}
         </InsightsClient>
       </PageContent>
     </PageContainer>

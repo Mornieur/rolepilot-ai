@@ -16,18 +16,32 @@ export function JobStatusControls({
 }) {
   const [state, action, pending] = useActionState(saveJobStatusAction, initialJobStatusActionState);
   const current = state.current ?? currentStatus;
+  const labels = {
+    saved: 'Salvar',
+    ignored: 'Ignorar',
+    applied: 'Candidatada',
+    rejected: 'Rejeitada',
+  } as const;
+  const stateLabels = {
+    new: 'nova',
+    saved: 'salva',
+    ignored: 'ignorada',
+    applied: 'candidatada',
+    rejected: 'rejeitada',
+  } as const;
   return (
     <form action={action} className="mt-3">
       <input type="hidden" name="profileId" value={profileId} />
       <input type="hidden" name="jobId" value={jobId} />
-      <h4 className="text-sm font-semibold">Your decision</h4>
+      <h4 className="text-sm font-semibold">Sua decisão</h4>
       <p className="mt-1 text-sm" role="status">
-        Current state: {current}
+        Estado atual: {stateLabels[current as keyof typeof stateLabels] ?? current}
       </p>
-      <div className="mt-2 flex flex-wrap gap-2" aria-label="Your decision">
+      <div className="mt-2 flex flex-wrap gap-2" aria-label="Sua decisão">
         {['saved', 'ignored', 'applied', 'rejected'].map((status) => (
           <Button
             key={status}
+            type="submit"
             name="status"
             value={status}
             disabled={pending}
@@ -35,11 +49,7 @@ export function JobStatusControls({
             variant={current === status ? 'primary' : 'secondary'}
             className="capitalize"
           >
-            {status === 'saved'
-              ? 'Save'
-              : status === 'ignored'
-                ? 'Ignore'
-                : status[0].toUpperCase() + status.slice(1)}
+            {labels[status as keyof typeof labels]}
           </Button>
         ))}
       </div>
