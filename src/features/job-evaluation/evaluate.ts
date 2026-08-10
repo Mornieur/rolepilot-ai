@@ -37,6 +37,9 @@ const clearlyDistantTitles = [
   'data engineer',
   'cyber',
   'security',
+  'android',
+  'ios',
+  'mobile',
   'product manager',
   'sales',
   'human resources',
@@ -45,11 +48,11 @@ const clearlyDistantTitles = [
 
 function matchDesiredRole(title: string, searchable: string, desiredRoles: string[]) {
   const literal = terms(title, desiredRoles);
-  if (literal.length) return literal;
   const profileTargetsFrontend = unique(desiredRoles).some((role) =>
     frontendSignals.some((signal) => role.includes(signal)),
   );
-  if (!profileTargetsFrontend) return [];
+  const specificLiteral = literal.filter((term) => !adjacentEngineeringTitles.includes(term));
+  if (specificLiteral.length || !profileTargetsFrontend) return specificLiteral;
   const titleIsDistant = clearlyDistantTitles.some((term) => includesTerm(title, term));
   const titleIsAdjacent = adjacentEngineeringTitles.some((term) => includesTerm(title, term));
   const hasFrontendEvidence = frontendSignals.some((term) => includesTerm(searchable, term));
@@ -179,8 +182,11 @@ export function evaluateJob(
       score -= 10;
       reasons.push({
         code,
-        outcome: 'neutral',
-        message: `${label} diferente; revise manualmente.`,
+        outcome: code === 'work-model' ? 'fail' : 'neutral',
+        message:
+          code === 'work-model'
+            ? 'Modelo de trabalho incompatível com o perfil.'
+            : `${label} diferente; revise manualmente.`,
       });
     } else
       reasons.push({

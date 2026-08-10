@@ -18,7 +18,13 @@ vi.mock('@/features/job-actions/components/job-status-controls', () => ({
 
 import { EvaluationResults } from './evaluation-results';
 
-const result = (id: string, eligible: boolean): DeterministicJobEvaluation => ({
+const result = (
+  id: string,
+  eligible: boolean,
+  reasons: DeterministicJobEvaluation['reasons'] = [
+    { code: 'required', outcome: eligible ? 'pass' : 'fail', message: 'Requirements checked.' },
+  ],
+): DeterministicJobEvaluation => ({
   profileId: 'profile-1',
   eligible,
   status: eligible ? 'eligible' : 'rejected',
@@ -42,9 +48,7 @@ const result = (id: string, eligible: boolean): DeterministicJobEvaluation => ({
     createdAt: '2026-08-01T00:00:00Z',
     updatedAt: '2026-08-01T00:00:00Z',
   },
-  reasons: [
-    { code: 'required', outcome: eligible ? 'pass' : 'fail', message: 'Requirements checked.' },
-  ],
+  reasons,
   matchedKeywords: [],
   matchedRequiredKeywords: [],
   matchedPreferredKeywords: [],
@@ -70,5 +74,25 @@ describe('EvaluationResults', () => {
     fireEvent.click(screen.getByRole('button', { name: 'rejeitadas' }));
     expect(screen.queryByRole('heading', { name: /eligible role/i })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /rejected role/i })).toBeInTheDocument();
+  });
+
+  it('counts a failed work-model reason among hard rejection summaries', () => {
+    render(
+      <EvaluationResults
+        results={[
+          result('work-model-rejected', false, [
+            {
+              code: 'work-model',
+              outcome: 'fail',
+              message: 'Modelo de trabalho incompatível com o perfil.',
+            },
+          ]),
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText(/Modelo de trabalho incompatível com o perfil\. \(1\)/),
+    ).toBeInTheDocument();
   });
 });
