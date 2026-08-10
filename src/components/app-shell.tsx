@@ -31,19 +31,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="font-semibold text-slate-900 dark:text-slate-100">
             RolePilot AI
           </Link>
-          <nav aria-label="Primary navigation" className="flex items-center gap-3 text-sm">
-            <Link href="/profiles">Profiles</Link>
-            <Link href="/companies">Companies</Link>
-            <Link href="/jobs">Jobs</Link>
+          <nav
+            aria-label="Navegação principal"
+            className="flex flex-wrap items-center gap-3 text-sm"
+          >
+            <Link href="/">Início</Link>
+            <Link href="/profiles">Perfis</Link>
+            <Link href="/companies">Empresas</Link>
+            <Link href="/jobs">Vagas</Link>
+            <Link href="/jobs/evaluate">Avaliar vagas</Link>
             <Link href="/insights">Insights</Link>
             <Button
               type="button"
               variant="secondary"
               aria-pressed={theme === 'dark'}
-              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+              aria-label={`Mudar para tema ${theme === 'light' ? 'escuro' : 'claro'}`}
               onClick={toggle}
             >
-              Theme: {theme}
+              Tema: {theme === 'light' ? 'claro' : 'escuro'}
             </Button>
           </nav>
         </div>

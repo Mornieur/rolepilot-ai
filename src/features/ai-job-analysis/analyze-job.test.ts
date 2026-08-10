@@ -66,7 +66,7 @@ describe('Gemini job analysis boundary', () => {
   });
   it('returns controlled configuration error without a key', async () => {
     delete process.env.GEMINI_API_KEY;
-    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow('not configured');
+    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow('não está configurada');
     expect(generateContent).not.toHaveBeenCalled();
   });
   it('uses bounded structured Gemini request and default model', async () => {
@@ -80,14 +80,30 @@ describe('Gemini job analysis boundary', () => {
   it('uses configured model and maps malformed output safely', async () => {
     process.env.GEMINI_MODEL = 'custom';
     generateContent.mockResolvedValue({ text: '{' });
-    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow('invalid structured');
+    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow('resultado estruturado inválido');
     expect(generateContent.mock.calls[0][0].model).toBe('custom');
+  });
+  it.each([
+    ['empty response', undefined],
+    ['missing top-level field', { ...valid, confidence: undefined }],
+    ['missing nested field', { ...valid, deterministicAssessment: { score: 80 } }],
+    ['invalid recommendation', { ...valid, recommendation: 'maybe' }],
+    ['invalid confidence', { ...valid, confidence: 'certain' }],
+    ['wrong scalar type', { ...valid, summary: 12 }],
+    ['unexpected null', { ...valid, summary: null }],
+    ['too-short string', { ...valid, summary: '' }],
+    ['too-long string', { ...valid, summary: 'x'.repeat(601) }],
+    ['score mismatch', { ...valid, deterministicAssessment: { score: 79, eligible: true } }],
+  ])('rejects %s without retrying or persisting', async (_name, payload) => {
+    generateContent.mockResolvedValue({
+      text: payload === undefined ? undefined : JSON.stringify(payload),
+    });
+    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow();
+    expect(generateContent).toHaveBeenCalledOnce();
   });
   it('does not call Gemini for an ineligible job', async () => {
     vi.mocked(evaluateJob).mockReturnValue({ ...evaluation, eligible: false } as never);
-    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow(
-      'only for deterministically eligible',
-    );
+    await expect(analyzeEligibleJob('p', 'j')).rejects.toThrow('apenas para vagas elegíveis');
     expect(generateContent).not.toHaveBeenCalled();
   });
 });

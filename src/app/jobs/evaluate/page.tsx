@@ -22,8 +22,8 @@ export default async function EvaluateJobsPage({
     return (
       <PageContainer>
         <div className="mx-auto max-w-5xl">
-          <Alert variant="danger" title="Profile configuration unavailable">
-            {profiles.error ?? 'Please try again.'}
+          <Alert variant="danger" title="Configuração de perfis indisponível">
+            {profiles.error ?? 'Tente novamente.'}
           </Alert>
         </div>
       </PageContainer>
@@ -69,35 +69,34 @@ export default async function EvaluateJobsPage({
           ),
         );
     } catch {
-      error =
-        'Evaluation could not be completed. Select a current candidate profile and try again.';
+      error = 'A avaliação não pôde ser concluída. Selecione um perfil atual e tente novamente.';
     }
   return (
     <PageContainer>
       <PageContent>
         <PageHeader
-          title="Rule-based job evaluation"
-          description="Deterministic evaluation is separate from optional Gemini analysis and your decision."
+          title="Avaliação de vagas por regras"
+          description="A avaliação determinística é separada da análise opcional do Gemini e da sua decisão."
           actions={
             <Link
               href="/jobs"
               className="text-sm font-medium text-sky-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:text-cyan-300"
             >
-              Back to jobs
+              Voltar às vagas
             </Link>
           }
         />
         {profiles.profiles.length === 0 ? (
           <EmptyState
             className="mt-6"
-            title="Create a candidate profile first"
-            description="A profile is required before evaluating collected jobs."
+            title="Crie um perfil primeiro"
+            description="Um perfil é necessário antes de avaliar as vagas coletadas."
             action={
               <Link
                 href="/profiles"
                 className="text-sm font-medium text-sky-700 underline underline-offset-4 dark:text-cyan-300"
               >
-                Manage profiles
+                Gerenciar perfis
               </Link>
             }
           />
@@ -108,11 +107,11 @@ export default async function EvaluateJobsPage({
                 <Select
                   id="profileId"
                   name="profileId"
-                  label="Candidate profile"
+                  label="Perfil"
                   defaultValue={profileId}
                   fullWidth
                 >
-                  <option value="">Choose a profile</option>
+                  <option value="">Escolha um perfil</option>
                   {profiles.profiles.map((profile) => (
                     <option key={profile.id} value={profile.id}>
                       {profile.name}
@@ -121,13 +120,13 @@ export default async function EvaluateJobsPage({
                 </Select>
               </div>
               <Button type="submit" className="w-full sm:w-auto">
-                Evaluate jobs
+                Avaliar vagas
               </Button>
             </form>
           </Surface>
         )}
         {error && (
-          <Alert className="mt-4" variant="danger" title="Evaluation unavailable" role="alert">
+          <Alert className="mt-4" variant="danger" title="Avaliação indisponível" role="alert">
             {error}
           </Alert>
         )}

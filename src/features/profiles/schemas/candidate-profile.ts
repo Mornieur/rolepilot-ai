@@ -47,7 +47,7 @@ export const candidateProfileIdSchema = z.string().uuid('Profile identifier is i
 export type CandidateProfileInput = z.output<typeof candidateProfileInputSchema>;
 
 const splitList = (value: FormDataEntryValue | null) =>
-  typeof value === 'string' ? value.split(',') : [];
+  typeof value === 'string' ? value.split(',').filter((item) => item.trim()) : [];
 const selectedValues = (formData: FormData, field: string) =>
   formData.getAll(field).filter((value): value is string => typeof value === 'string');
 

@@ -15,6 +15,8 @@ import {
 import { shortenPreview } from '@/features/job-sources/greenhouse/description';
 import type { ExternalJobPreview } from '@/features/job-sources/greenhouse/types';
 import type { TargetCompany } from '@/types/domain';
+import { Button, Card, Surface } from '@/components/feitoza-ui';
+import { PageContainer, PageContent } from '@/components/page-layout';
 
 export function GreenhousePreview({ company }: { company: TargetCompany }) {
   const [state, formAction, pending] = useActionState(
@@ -27,89 +29,87 @@ export function GreenhousePreview({ company }: { company: TargetCompany }) {
   );
   const unavailableReason =
     company.provider !== 'greenhouse'
-      ? 'Preview is planned for Lever, but is not available yet.'
+      ? 'A prévia para Lever está planejada, mas ainda não está disponível.'
       : !company.enabled
-        ? 'Enable monitoring in company settings before requesting a preview.'
+        ? 'Marque a empresa para monitoramento futuro antes de solicitar uma prévia manual.'
         : null;
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900 sm:px-8">
-      <div className="mx-auto max-w-5xl">
-        <Link
-          href="/companies"
-          className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300"
-        >
-          Back to companies
-        </Link>
-        <header className="mt-6 border-b border-slate-200 pb-6">
-          <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase">
-            RolePilot AI
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Greenhouse job preview</h1>
-          <p className="mt-2 text-slate-600">
-            {company.name} · {company.boardIdentifier}
-          </p>
-          <p className="mt-4 rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950">
-            Preview only — these jobs have not been saved to RolePilot.
-          </p>
-        </header>
-        <section className="mt-8" aria-labelledby="preview-request">
-          <h2 id="preview-request" className="text-xl font-semibold">
-            Manual collection
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Request currently published jobs from the official public Greenhouse Job Board API.
-          </p>
-          <form action={formAction} className="mt-4">
-            <input type="hidden" name="companyId" value={company.id} />
-            <button
-              type="submit"
-              disabled={pending || Boolean(unavailableReason)}
-              className="rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {pending ? 'Requesting preview…' : 'Preview jobs'}
-            </button>
-          </form>
-          {unavailableReason && <p className="mt-3 text-sm text-amber-800">{unavailableReason}</p>}
-          <PreviewStatus state={state} loading={pending} />
-        </section>
-        {state.status === 'success' && state.jobs && (
-          <>
-            <JobList
-              jobs={state.jobs}
-              total={state.total ?? state.jobs.length}
-              skippedJobs={state.skippedJobs ?? 0}
-              requestedAt={state.requestedAt}
-            />
-            <form action={collectionAction} className="mt-6">
+    <PageContainer>
+      <PageContent>
+        <Surface className="p-5 sm:p-6">
+          <Link
+            href="/companies"
+            className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            Voltar às empresas
+          </Link>
+          <header className="mt-6 border-b border-slate-200 pb-6 dark:border-slate-700">
+            <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase">
+              RolePilot AI
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight">
+              Prévia de vagas Greenhouse
+            </h1>
+            <p className="mt-2 text-slate-600 dark:text-slate-300">
+              {company.name} · {company.boardIdentifier}
+            </p>
+            <p className="mt-4 rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-950 dark:border-cyan-900 dark:bg-slate-900 dark:text-cyan-100">
+              Apenas prévia — estas vagas ainda não foram salvas no RolePilot.
+            </p>
+          </header>
+          <section className="mt-8" aria-labelledby="preview-request">
+            <h2 id="preview-request" className="text-xl font-semibold">
+              Coleta manual
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              Solicite vagas publicadas atualmente pela API pública oficial do Greenhouse.
+            </p>
+            <form action={formAction} className="mt-4">
               <input type="hidden" name="companyId" value={company.id} />
-              <p className="mb-2 text-sm text-slate-600">
-                Saving rechecks Greenhouse on the server; preview data is never submitted from the
-                browser.
-              </p>
-              <button
-                type="submit"
-                disabled={saving}
-                className="rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {saving ? 'Saving collected jobs…' : 'Save collected jobs'}
-              </button>
+              <Button type="submit" disabled={pending || Boolean(unavailableReason)}>
+                {pending ? 'Solicitando prévia…' : 'Ver vagas'}
+              </Button>
             </form>
-            {collection.status === 'error' && (
-              <p role="alert" className="mt-3 text-sm text-red-700">
-                {collection.message}
-              </p>
+            {unavailableReason && (
+              <p className="mt-3 text-sm text-amber-800 dark:text-amber-200">{unavailableReason}</p>
             )}
-            {collection.status === 'success' && collection.result && (
-              <p role="status" className="mt-3 text-sm text-emerald-700">
-                Saved: {collection.result.created} created, {collection.result.updated} updated,{' '}
-                {collection.result.unchanged} unchanged, {collection.result.skipped} skipped,{' '}
-                {collection.result.malformed} malformed.
-              </p>
-            )}
-          </>
-        )}
-      </div>
-    </main>
+            <PreviewStatus state={state} loading={pending} />
+          </section>
+          {state.status === 'success' && state.jobs && (
+            <>
+              <JobList
+                jobs={state.jobs}
+                total={state.total ?? state.jobs.length}
+                skippedJobs={state.skippedJobs ?? 0}
+                requestedAt={state.requestedAt}
+              />
+              <form action={collectionAction} className="mt-6">
+                <input type="hidden" name="companyId" value={company.id} />
+                <p className="mb-2 text-sm text-slate-600 dark:text-slate-300">
+                  Salvar consulta o Greenhouse novamente no servidor; os dados da prévia não são
+                  enviados pelo navegador.
+                </p>
+                <Button type="submit" disabled={saving}>
+                  {saving ? 'Salvando vagas coletadas…' : 'Salvar vagas coletadas'}
+                </Button>
+              </form>
+              {collection.status === 'error' && (
+                <p role="alert" className="mt-3 text-sm text-red-700">
+                  {collection.message}
+                </p>
+              )}
+              {collection.status === 'success' && collection.result && (
+                <p role="status" className="mt-3 text-sm text-emerald-700">
+                  Salvas: {collection.result.created} criadas, {collection.result.updated}{' '}
+                  atualizadas, {collection.result.unchanged} sem alteração,{' '}
+                  {collection.result.skipped} ignoradas, {collection.result.malformed} inválidas.
+                </p>
+              )}
+            </>
+          )}
+        </Surface>
+      </PageContent>
+    </PageContainer>
   );
 }
 
@@ -123,19 +123,19 @@ function PreviewStatus({
   if (loading)
     return (
       <p role="status" className="mt-3 text-sm text-slate-600">
-        Requesting published jobs from Greenhouse…
+        Solicitando vagas publicadas no Greenhouse…
       </p>
     );
   if (state.status === 'idle')
     return (
       <p role="status" className="mt-3 text-sm text-slate-500">
-        No preview has been requested yet.
+        Nenhuma prévia foi solicitada ainda.
       </p>
     );
   if (state.status === 'success')
     return (
       <p role="status" className="mt-3 text-sm text-emerald-700">
-        Preview received successfully.
+        Prévia recebida com sucesso.
       </p>
     );
   if (state.status === 'empty')
@@ -166,49 +166,52 @@ function JobList({
     <section className="mt-10" aria-labelledby="preview-results">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 id="preview-results" className="text-xl font-semibold">
-          Published jobs
+          Vagas publicadas
         </h2>
         <p className="text-sm text-slate-600">
-          {total} returned{skippedJobs > 0 ? ` · ${skippedJobs} malformed entries excluded` : ''}
+          {total} retornadas
+          {skippedJobs > 0 ? ` · ${skippedJobs} entradas inválidas excluídas` : ''}
         </p>
       </div>
       {requestedAt && (
         <p className="mt-2 text-sm text-slate-500">
-          Requested {new Date(requestedAt).toLocaleString()}
+          Solicitada em {new Date(requestedAt).toLocaleString('pt-BR')}
         </p>
       )}
       <div className="mt-4 space-y-4">
         {jobs.map((job) => (
-          <article key={job.externalId} className="rounded-lg border border-slate-200 bg-white p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold">{job.title}</h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  {[job.location, job.language].filter(Boolean).join(' · ') ||
-                    'Location not provided'}
-                </p>
+          <article key={job.externalId}>
+            <Card className="p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold">{job.title}</h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {[job.location, job.language].filter(Boolean).join(' · ') ||
+                      'Localização não informada'}
+                  </p>
+                </div>
+                <a
+                  href={job.originalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                >
+                  Abrir vaga original
+                </a>
               </div>
-              <a
-                href={job.originalUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                Open original job
-              </a>
-            </div>
-            {job.descriptionText && (
-              <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">
-                {shortenPreview(job.descriptionText)}
-              </p>
-            )}
-            <Metadata label="Departments" values={job.departments} />
-            <Metadata label="Offices" values={job.offices} />
-            {job.sourceUpdatedAt && (
-              <p className="mt-3 text-xs text-slate-500">
-                Updated at source: {job.sourceUpdatedAt}
-              </p>
-            )}
+              {job.descriptionText && (
+                <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-700">
+                  {shortenPreview(job.descriptionText)}
+                </p>
+              )}
+              <Metadata label="Departamentos" values={job.departments} />
+              <Metadata label="Escritórios" values={job.offices} />
+              {job.sourceUpdatedAt && (
+                <p className="mt-3 text-xs text-slate-500">
+                  Atualizada na fonte: {job.sourceUpdatedAt}
+                </p>
+              )}
+            </Card>
           </article>
         ))}
       </div>

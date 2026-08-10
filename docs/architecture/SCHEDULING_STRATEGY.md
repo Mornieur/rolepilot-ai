@@ -1,3 +1,3 @@
 # Agendamento
 
-Meta horária quando infraestrutura gratuita permitir; manual permanece e o computador não precisa ficar ligado. Atrasos de plano gratuito são aceitos. Providers são isolados, respeitam limite e não usam loops infinitos. Infraestrutura fica para ADR dedicado.
+Coleta automática ainda não está implementada. A versão atual usa prévia e salvamento manuais, sem cron, fila, polling ou processo em segundo plano. Um agendamento futuro exigirá decisão arquitetural/ADR dedicado; providers continuarão isolados e sujeitos a limites.

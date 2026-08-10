@@ -4,7 +4,7 @@
 
 FeitozaUI is the official visual base, consumed only from the public `@feitoza-ui/core@0.3.0` entrypoint. Dashboard, profiles, companies, jobs, evaluation, and insights use its components where appropriate; Tailwind remains for responsive composition. The persisted light/dark shell is shared across these routes. Server-side data access remains on the server, while interactive selection, filters, and actions have narrow client boundaries. No business rule, score, eligibility, collection, Supabase behavior, or Gemini call count changed in the visual rollout. See [the adoption matrix](docs/architecture/FEITOZA_UI_ADOPTION_MATRIX.md).
 
-Successful manual Gemini analyses are stored as profile/job history with provider, model, schema version, timestamp, optional returned usage metadata, and a safe input fingerprint. Reanalysis is explicit; no raw prompt, provider response, error body, key, or cost estimate is stored.
+Successful manual Gemini analyses are stored as profile/job history with provider, model, schema version, timestamp, optional returned usage metadata, and a safe input fingerprint. Reanalysis is explicit; no raw prompt, provider response, error body, key, or cost estimate is stored. The current MVP interface is Portuguese-first.
 
 ## Documentação do projeto
 
@@ -56,6 +56,7 @@ Apply the migrations in order through the Supabase SQL editor:
 2. `supabase/migrations/202607290002_create_target_companies.sql`
 3. `supabase/migrations/202607290003_create_jobs.sql`
 4. `supabase/migrations/202608060001_create_job_user_statuses.sql`
+5. `supabase/migrations/202608090001_create_job_ai_analyses.sql`
 
 Then run `supabase/seed.sql` to insert generic example profiles and companies. It is non-destructive and does not reset data.
 
@@ -75,10 +76,10 @@ RolePilot uses the official public Greenhouse Job Board API endpoint, `GET https
 To preview a board:
 
 1. Configure an enabled Greenhouse target company with its board identifier.
-2. Open `/companies` and choose **Preview jobs**.
+2. Open `/companies` and choose **Ver vagas**.
 3. Request the manual preview and inspect the currently published jobs.
 
-After previewing, choose **Save collected jobs** to re-fetch Greenhouse on the server and persist fresh normalized records. Jobs are deduplicated by provider, target company, and external job ID; repeated unchanged collections update `last_seen_at`, while changed source fields update the stored record. `first_seen_at` remains stable. Browse stored source jobs at `/jobs`.
+After previewing, choose **Salvar vagas coletadas** to re-fetch Greenhouse on the server and persist fresh normalized records. Jobs are deduplicated by provider, target company, and external job ID; repeated unchanged collections update `last_seen_at`, while changed source fields update the stored record. `first_seen_at` remains stable. Descriptions are normalized to plain text; records collected before this normalization may need recollection. Browse the raw collected pool at `/jobs` and use **Avaliar vagas** to match it against a profile.
 
 No automatic collection, closed-job detection, notifications, Lever ingestion, or authentication is implemented. The transitional manual AI analysis is described below. Collection history is returned to the current UI only; it is not stored as a separate run record.
 
@@ -91,7 +92,7 @@ The existing profile fields are sufficient, so no profile migration was needed:
 - desired roles must match the job title when configured;
 - every required skill must match searchable source text;
 - preferred skills add score only;
-- excluded skills reject a job;
+- excluded skills reject a job and may be an empty list;
 - detected seniority, location, and work model reject a job only when explicitly incompatible. Unknown or absent source data is neutral.
 
 Searchable source text is normalized case-insensitively, with accents and punctuation normalized, across title, description, location, departments, and offices. Seniority is detected from the title only. The page shows the rule reasons and a secondary 0–100 score; eligibility is always decided by the mandatory rules, not the score. Results exist only for the request and are not persisted.
@@ -108,7 +109,7 @@ Notes are stored with a decision but are not yet available in the UI. Job action
 
 ## Manual AI analysis
 
-Manual structured AI analysis uses Gemini Developer API free tier. Live provider validation is pending; ChatGPT Plus does not fund embedded API usage. The analysis is advisory, manual, non-persistent, eligible-only in the current UI, and never submits an application. There is no paid fallback.
+Manual structured AI analysis uses Gemini Developer API free tier. Live provider validation is pending; ChatGPT Plus does not fund embedded API usage. The analysis is advisory, manual, persisted as per-profile/job history, eligible-only in the current UI, and never submits an application. There is no paid fallback.
 
 ## Available scripts
 
@@ -132,12 +133,12 @@ There is no authentication or authorization. This version is intended only as a 
 - Candidate profiles and target-company configurations are persisted.
 - Greenhouse supports manual preview and explicit job persistence; Lever remains configuration-only.
 - Lever is configured but its connector remains planned.
-- Deterministic evaluation is available; a transitional manual OpenAI analysis exists but Gemini is the approved future runtime.
+- Deterministic evaluation is available; manual Gemini analysis is persisted after successful validation.
 - Automatic collection and daily execution are not implemented.
 - Alerts are not implemented. The planned direction is Telegram first, WhatsApp later, and Alexa as an advanced integration.
 - There is no authentication, user model, or multi-tenancy.
 
 ## Short roadmap
 
-1. Migrate the transitional OpenAI runtime to Gemini free tier and validate one live analysis.
-2. Add scheduled collection and notification channels.
+1. Validate one manual Gemini analysis in a controlled local smoke test.
+2. Consider scheduled collection and notification channels only in a future approved phase.

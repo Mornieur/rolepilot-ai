@@ -4,17 +4,20 @@ export class AiJobAnalysisError extends Error {
   }
 }
 export const aiError = {
-  configuration: () => new AiJobAnalysisError('AI analysis is not configured.'),
-  profile: () => new AiJobAnalysisError('Candidate profile not found.'),
-  job: () => new AiJobAnalysisError('Persisted job not found.'),
+  configuration: () => new AiJobAnalysisError('A análise de IA não está configurada.'),
+  profile: () => new AiJobAnalysisError('Perfil não encontrado.'),
+  job: () => new AiJobAnalysisError('Vaga salva não encontrada.'),
   ineligible: () =>
-    new AiJobAnalysisError('AI analysis is available only for deterministically eligible jobs.'),
-  timeout: () => new AiJobAnalysisError('AI analysis timed out. Please retry.'),
+    new AiJobAnalysisError('A análise de IA está disponível apenas para vagas elegíveis.'),
+  timeout: () => new AiJobAnalysisError('A análise de IA expirou. Tente novamente.'),
   rateLimit: () =>
-    new AiJobAnalysisError('AI analysis is temporarily rate limited. Please retry later.'),
-  refused: () => new AiJobAnalysisError('AI analysis was refused. Please review the job manually.'),
-  invalid: () => new AiJobAnalysisError('AI analysis returned an invalid structured result.'),
-  persistence: () => new AiJobAnalysisError('AI analysis could not be saved. Please try again.'),
+    new AiJobAnalysisError(
+      'A análise de IA está temporariamente limitada. Tente novamente mais tarde.',
+    ),
+  refused: () => new AiJobAnalysisError('A análise de IA foi recusada. Revise a vaga manualmente.'),
+  invalid: () =>
+    new AiJobAnalysisError('A análise de IA retornou um resultado estruturado inválido.'),
+  persistence: () => new AiJobAnalysisError('A análise de IA não pôde ser salva. Tente novamente.'),
   unavailable: () =>
-    new AiJobAnalysisError('AI analysis is temporarily unavailable. Please retry.'),
+    new AiJobAnalysisError('A análise de IA está temporariamente indisponível. Tente novamente.'),
 };

@@ -28,21 +28,25 @@ describe('GreenhousePreview', () => {
   it('renders the idle read-only state', () => {
     render(<GreenhousePreview company={company} />);
     expect(
-      screen.getByText('Preview only — these jobs have not been saved to RolePilot.'),
+      screen.getByText('Apenas prévia — estas vagas ainda não foram salvas no RolePilot.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('No preview has been requested yet.')).toBeInTheDocument();
+    expect(screen.getByText('Nenhuma prévia foi solicitada ainda.')).toBeInTheDocument();
   });
+
   it('prevents active previews for disabled and Lever companies', () => {
     const { rerender } = render(<GreenhousePreview company={{ ...company, enabled: false }} />);
-    expect(screen.getByRole('button', { name: 'Preview jobs' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Ver vagas' })).toBeDisabled();
     expect(
-      screen.getByText('Enable monitoring in company settings before requesting a preview.'),
+      screen.getByText(
+        'Marque a empresa para monitoramento futuro antes de solicitar uma prévia manual.',
+      ),
     ).toBeInTheDocument();
     rerender(<GreenhousePreview company={{ ...company, provider: 'lever' }} />);
     expect(
-      screen.getByText('Preview is planned for Lever, but is not available yet.'),
+      screen.getByText('A prévia para Lever está planejada, mas ainda não está disponível.'),
     ).toBeInTheDocument();
   });
+
   it('announces the loading state while a request is in progress', async () => {
     let resolvePreview: (state: { status: 'empty'; message: string }) => void = () => undefined;
     previewAction.mockImplementationOnce(
@@ -52,8 +56,8 @@ describe('GreenhousePreview', () => {
         }),
     );
     render(<GreenhousePreview company={company} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Preview jobs' }));
-    expect(screen.getByText('Requesting published jobs from Greenhouse…')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver vagas' }));
+    expect(screen.getByText('Solicitando vagas publicadas no Greenhouse…')).toBeInTheDocument();
     resolvePreview({ status: 'empty', message: 'No published jobs were returned for this board.' });
     await waitFor(() =>
       expect(
@@ -61,6 +65,7 @@ describe('GreenhousePreview', () => {
       ).toBeInTheDocument(),
     );
   });
+
   it('shows success, empty, and retryable error states', async () => {
     previewAction
       .mockResolvedValueOnce({
@@ -94,22 +99,22 @@ describe('GreenhousePreview', () => {
         message: 'Greenhouse is temporarily unavailable. Please try again.',
       });
     render(<GreenhousePreview company={company} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Preview jobs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver vagas' }));
     await waitFor(() => expect(screen.getByText('Engineer')).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: 'Open original job' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Abrir vaga original' })).toHaveAttribute(
       'rel',
       'noreferrer',
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Preview jobs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver vagas' }));
     await waitFor(() =>
       expect(
         screen.getByText('No published jobs were returned for this board.'),
       ).toBeInTheDocument(),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Preview jobs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver vagas' }));
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('Greenhouse is temporarily unavailable'),
     );
-    expect(screen.getByRole('button', { name: 'Preview jobs' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Ver vagas' })).toBeEnabled();
   });
 });

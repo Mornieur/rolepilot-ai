@@ -14,12 +14,16 @@ describe('AppShell', () => {
         <main>Page content</main>
       </AppShell>,
     );
-    expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Insights' })).toHaveAttribute('href', '/insights');
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to dark theme' }));
+    expect(screen.getByRole('link', { name: 'Avaliar vagas' })).toHaveAttribute(
+      'href',
+      '/jobs/evaluate',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Mudar para tema escuro' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem('rolepilot-theme')).toBe('dark');
-    expect(screen.getByRole('button', { name: 'Switch to light theme' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Mudar para tema claro' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );

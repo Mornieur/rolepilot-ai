@@ -17,18 +17,18 @@ export default async function Home() {
   ]);
   if (profileResult.error !== null)
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900">
-        <div className="mx-auto max-w-xl rounded-lg border border-red-200 bg-white p-6">
+      <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="mx-auto max-w-xl rounded-lg border border-red-200 bg-white p-6 dark:border-red-900 dark:bg-slate-900">
           <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase">
             RolePilot AI
           </p>
-          <h1 className="mt-3 text-2xl font-semibold">Dashboard unavailable</h1>
-          <p className="mt-3 text-slate-600">{profileResult.error}</p>
+          <h1 className="mt-3 text-2xl font-semibold">Início indisponível</h1>
+          <p className="mt-3 text-slate-600 dark:text-slate-300">{profileResult.error}</p>
           <Link
             href="/profiles"
             className="mt-5 inline-block font-medium text-blue-700 underline underline-offset-4"
           >
-            Manage candidate profiles
+            Gerenciar perfis
           </Link>
         </div>
       </main>
@@ -45,7 +45,7 @@ export default async function Home() {
       ),
     );
   } catch {
-    jobStatusCountsError = 'Please try again.';
+    jobStatusCountsError = 'Tente novamente.';
   }
   return (
     <Dashboard

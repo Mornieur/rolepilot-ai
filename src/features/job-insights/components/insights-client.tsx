@@ -12,15 +12,17 @@ export function InsightsFilters({
   profiles,
   profileId,
   period,
+  scope = 'all',
 }: {
   profiles: CandidateProfile[];
   profileId?: string;
   period: InsightPeriod;
+  scope?: 'all' | 'relevant';
 }) {
   return (
     <form className="mt-6 flex flex-wrap gap-4">
       <label>
-        Candidate profile
+        Perfil
         <Select name="profileId" defaultValue={profileId} className="ml-2">
           {profiles.map((profile) => (
             <option key={profile.id} value={profile.id}>
@@ -30,18 +32,25 @@ export function InsightsFilters({
         </Select>
       </label>
       <label>
-        Period
-        <Select name="period" defaultValue={period} className="ml-2">
-          <option value="7d">Last 7 days</option>
-          <option value="30d">Last 30 days</option>
-          <option value="all">All history</option>
+        Vagas
+        <Select name="scope" defaultValue={scope} className="ml-2">
+          <option value="all">Todas coletadas</option>
+          <option value="relevant">Compatíveis com o perfil</option>
         </Select>
       </label>
-      <Button type="submit">Update insights</Button>
+      <label>
+        Período
+        <Select name="period" defaultValue={period} className="ml-2">
+          <option value="7d">Últimos 7 dias</option>
+          <option value="30d">Últimos 30 dias</option>
+          <option value="all">Todo o histórico</option>
+        </Select>
+      </label>
+      <Button type="submit">Atualizar insights</Button>
     </form>
   );
 }
 
 export function InsightsEmpty() {
-  return <Card className="mt-6 p-5">No collected jobs exist for this period.</Card>;
+  return <Card className="mt-6 p-5">Não há vagas coletadas neste período.</Card>;
 }

@@ -63,11 +63,11 @@ describe('EvaluationResults', () => {
         statuses={{ 'eligible-job': 'saved' }}
       />,
     );
-    expect(screen.getAllByText('Deterministic evaluation')).toHaveLength(2);
+    expect(screen.getAllByText('Avaliação determinística')).toHaveLength(2);
     expect(screen.getByText('Manual Gemini analysis')).toBeInTheDocument();
     expect(screen.getAllByText('Your decision')).toHaveLength(2);
     expect(screen.getAllByRole('status')[0]).toHaveTextContent('Current state: saved');
-    fireEvent.click(screen.getByRole('button', { name: 'rejected' }));
+    fireEvent.click(screen.getByRole('button', { name: 'rejeitadas' }));
     expect(screen.queryByRole('heading', { name: /eligible role/i })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /rejected role/i })).toBeInTheDocument();
   });

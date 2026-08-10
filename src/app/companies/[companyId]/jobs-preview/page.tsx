@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { Alert, Surface } from '@/components/feitoza-ui';
+import { PageContainer, PageContent } from '@/components/page-layout';
 import { GreenhousePreview } from '@/features/job-sources/greenhouse/components/greenhouse-preview';
 import { loadTargetCompanyById } from '@/features/companies/server/load-companies';
 
@@ -14,20 +16,21 @@ export default async function JobsPreviewPage({
   const result = await loadTargetCompanyById(companyId);
   if (result.error !== null || result.company === null)
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900">
-        <div className="mx-auto max-w-xl rounded-lg border border-red-200 bg-white p-6">
-          <h1 className="text-2xl font-semibold">Job preview unavailable</h1>
-          <p className="mt-3 text-slate-600">
-            {result.error ?? 'The requested company could not be found.'}
-          </p>
-          <Link
-            href="/companies"
-            className="mt-5 inline-block font-medium text-blue-700 underline underline-offset-4"
-          >
-            Back to companies
-          </Link>
-        </div>
-      </main>
+      <PageContainer>
+        <PageContent>
+          <Surface className="mx-auto max-w-xl p-6">
+            <Alert variant="danger" title="Prévia de vagas indisponível">
+              {result.error ?? 'A empresa solicitada não foi encontrada.'}
+            </Alert>
+            <Link
+              href="/companies"
+              className="mt-5 inline-block font-medium text-blue-700 underline underline-offset-4"
+            >
+              Voltar às empresas
+            </Link>
+          </Surface>
+        </PageContent>
+      </PageContainer>
     );
   return <GreenhousePreview company={result.company} />;
 }

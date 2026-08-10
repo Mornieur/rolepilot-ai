@@ -24,6 +24,42 @@ function terms(text: string, values: string[]) {
   return unique(values).filter((term) => includesTerm(text, term));
 }
 
+const frontendSignals = ['frontend', 'front end', 'react', 'ui', 'web'];
+const adjacentEngineeringTitles = [
+  'software engineer',
+  'full stack',
+  'fullstack',
+  'web engineer',
+  'ui engineer',
+];
+const clearlyDistantTitles = [
+  'backend',
+  'data engineer',
+  'cyber',
+  'security',
+  'product manager',
+  'sales',
+  'human resources',
+  'recruit',
+];
+
+function matchDesiredRole(title: string, searchable: string, desiredRoles: string[]) {
+  const literal = terms(title, desiredRoles);
+  if (literal.length) return literal;
+  const profileTargetsFrontend = unique(desiredRoles).some((role) =>
+    frontendSignals.some((signal) => role.includes(signal)),
+  );
+  if (!profileTargetsFrontend) return [];
+  const titleIsDistant = clearlyDistantTitles.some((term) => includesTerm(title, term));
+  const titleIsAdjacent = adjacentEngineeringTitles.some((term) => includesTerm(title, term));
+  const hasFrontendEvidence = frontendSignals.some((term) => includesTerm(searchable, term));
+  return !titleIsDistant &&
+    (frontendSignals.some((term) => includesTerm(title, term)) ||
+      (titleIsAdjacent && hasFrontendEvidence))
+    ? ['adjacent frontend role']
+    : [];
+}
+
 const seniorityPatterns: [Seniority, RegExp][] = [
   ['junior', /\b(intern|internship|trainee|junior|jr)\b/],
   ['mid', /\b(mid level|mid|pleno)\b/],
@@ -73,16 +109,16 @@ export function evaluateJob(
   const required = terms(searchable, profile.requiredSkills);
   const preferred = terms(searchable, profile.preferredSkills);
   const excluded = terms(searchable, profile.excludedSkills);
-  const titleTerms = terms(title, profile.desiredRoles);
+  const titleTerms = matchDesiredRole(title, searchable, profile.desiredRoles);
   const detectedSeniorities = detectSeniorities(title);
   const detectedModels = detectModels(searchable, job.location, job.offices);
   const locationTerms = job.location
     ? terms(normalizeText([job.location, ...job.offices].join(' ')), profile.locations)
     : [];
 
-  const requiredOk =
-    profile.requiredSkills.length === 0 ||
-    required.length === unique(profile.requiredSkills).length;
+  const requiredTotal = unique(profile.requiredSkills).length;
+  const requiredCoverage = requiredTotal ? required.length / requiredTotal : 1;
+  const requiredOk = requiredCoverage >= 0.5;
   const titleOk = profile.desiredRoles.length === 0 || titleTerms.length > 0;
   const excludedOk = excluded.length === 0;
   const seniorityOk =
@@ -98,47 +134,63 @@ export function evaluateJob(
 
   if (titleOk) {
     score += profile.desiredRoles.length ? 25 : 0;
-    reasons.push({ code: 'title', outcome: 'pass', message: 'Target title matched.' });
-  } else reasons.push({ code: 'title', outcome: 'fail', message: 'No target title matched.' });
+    reasons.push({
+      code: 'title',
+      outcome: 'pass',
+      message: 'Cargo-alvo ou papel adjacente compatível.',
+    });
+  } else reasons.push({ code: 'title', outcome: 'fail', message: 'Cargo distante do perfil.' });
   if (requiredOk) {
     score += profile.requiredSkills.length ? 35 : 0;
-    reasons.push({ code: 'required', outcome: 'pass', message: 'Required keywords matched.' });
+    reasons.push({
+      code: 'required',
+      outcome: 'pass',
+      message: `Cobertura de skills obrigatórias: ${required.length}/${requiredTotal}.`,
+    });
   } else
     reasons.push({
       code: 'required',
       outcome: 'fail',
-      message: 'One or more required keywords are missing.',
+      message: 'Cobertura mínima de skills obrigatórias não atingida.',
     });
   if (preferred.length) {
     score += Math.min(15, preferred.length * 5);
     reasons.push({ code: 'preferred', outcome: 'pass', message: 'Preferred keywords matched.' });
   }
+  if (requiredOk && requiredCoverage < 1)
+    reasons.push({
+      code: 'required-partial',
+      outcome: 'neutral',
+      message: 'Uma skill obrigatória não foi encontrada; verifique manualmente.',
+    });
   if (!excludedOk) {
     score -= 40;
     reasons.push({ code: 'excluded', outcome: 'fail', message: 'An excluded keyword matched.' });
   }
   for (const [code, value, label] of [
-    ['seniority', seniorityOk, 'Seniority'],
-    ['location', locationOk, 'Location'],
-    ['work-model', workModelOk, 'Work model'],
+    ['seniority', seniorityOk, 'Senioridade'],
+    ['location', locationOk, 'Localização'],
+    ['work-model', workModelOk, 'Modelo de trabalho'],
   ] as const) {
     if (value === true) {
       score += 10;
       reasons.push({ code, outcome: 'pass', message: `${label} is accepted.` });
     } else if (value === false) {
-      score -= 20;
-      reasons.push({ code, outcome: 'fail', message: `${label} is incompatible.` });
+      score -= 10;
+      reasons.push({
+        code,
+        outcome: 'neutral',
+        message: `${label} diferente; revise manualmente.`,
+      });
     } else
-      reasons.push({ code, outcome: 'neutral', message: `${label} is unknown or unrestricted.` });
+      reasons.push({
+        code,
+        outcome: 'neutral',
+        message: `${label} desconhecido ou sem restrição.`,
+      });
   }
 
-  const eligible =
-    requiredOk &&
-    titleOk &&
-    excludedOk &&
-    seniorityOk !== false &&
-    locationOk !== false &&
-    workModelOk !== false;
+  const eligible = requiredOk && titleOk && excludedOk && workModelOk !== false;
   return {
     job,
     profileId: profile.id,
