@@ -81,6 +81,8 @@ describe('job AI analysis persistence', () => {
     client.from.mockReturnValue({
       insert: () => ({ select: () => ({ single: async () => ({ data: null, error: {} }) }) }),
     });
-    await expect(persistSuccessfulAiAnalysis(generated())).rejects.toThrow('could not be saved');
+    await expect(persistSuccessfulAiAnalysis(generated())).rejects.toThrow(
+      'Não foi possível salvar',
+    );
   });
 });

@@ -1,3 +1,3 @@
 'use client';
 
-export { Alert, Button, Card, EmptyState, Select, Surface } from '@feitoza-ui/core';
+export { Alert, Badge, Button, Card, EmptyState, Select, Surface } from '@feitoza-ui/core';

@@ -4,7 +4,6 @@ const dependencies = vi.hoisted(() => ({
   profile: vi.fn(),
   job: vi.fn(),
   save: vi.fn(),
-  revalidate: vi.fn(),
 }));
 vi.mock('@/features/job-actions/server/job-statuses', () => ({
   JobStatusDataError: class JobStatusDataError extends Error {},
@@ -14,7 +13,6 @@ vi.mock('@/features/profiles/server/candidate-profiles', () => ({
   getCandidateProfileById: dependencies.profile,
 }));
 vi.mock('@/features/jobs/server/persisted-jobs', () => ({ getPersistedJobById: dependencies.job }));
-vi.mock('next/cache', () => ({ revalidatePath: dependencies.revalidate }));
 
 import { saveJobStatusAction } from './actions';
 import { initialJobStatusActionState } from './action-state';
@@ -32,7 +30,6 @@ describe('save job status action', () => {
     dependencies.profile.mockReset().mockResolvedValue({ id: profileId });
     dependencies.job.mockReset().mockResolvedValue({ id: jobId });
     dependencies.save.mockReset().mockResolvedValue({ status: 'saved', notes: null });
-    dependencies.revalidate.mockReset();
   });
   it('validates IDs and status without accepting full job or profile payloads', async () => {
     await expect(
@@ -43,7 +40,7 @@ describe('save job status action', () => {
     ).resolves.toMatchObject({ status: 'error' });
     expect(dependencies.save).not.toHaveBeenCalled();
   });
-  it('checks profile and job existence, persists only the decision, and revalidates affected routes', async () => {
+  it('checks profile and job existence and persists only the decision', async () => {
     await expect(
       saveJobStatusAction(
         initialJobStatusActionState,
@@ -51,8 +48,6 @@ describe('save job status action', () => {
       ),
     ).resolves.toMatchObject({ status: 'success', current: 'saved' });
     expect(dependencies.save).toHaveBeenCalledWith(profileId, jobId, 'saved', 'keep');
-    expect(dependencies.revalidate).toHaveBeenCalledWith('/');
-    expect(dependencies.revalidate).toHaveBeenCalledWith('/jobs/evaluate');
   });
   it('does not save when the persisted profile or job does not exist', async () => {
     dependencies.job.mockResolvedValue(null);

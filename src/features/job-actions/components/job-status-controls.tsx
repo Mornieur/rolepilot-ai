@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@feitoza-ui/core';
 import { saveJobStatusAction } from '@/features/job-actions/actions';
 import { initialJobStatusActionState } from '@/features/job-actions/action-state';
@@ -15,6 +15,7 @@ export function JobStatusControls({
   currentStatus?: string;
 }) {
   const [state, action, pending] = useActionState(saveJobStatusAction, initialJobStatusActionState);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const current = state.current ?? currentStatus;
   const labels = {
     saved: 'Salvar',
@@ -35,6 +36,12 @@ export function JobStatusControls({
     applied: 'candidatada',
     rejected: 'rejeitada',
   } as const;
+  const pendingLabels = {
+    saved: 'Salvando…',
+    ignored: 'Ignorando…',
+    applied: 'Marcando candidatura…',
+    rejected: 'Rejeitando…',
+  } as const;
   return (
     <form action={action} className="mt-3">
       <input type="hidden" name="profileId" value={profileId} />
@@ -50,17 +57,25 @@ export function JobStatusControls({
             type="submit"
             name="status"
             value={status}
-            disabled={pending}
+            disabled={pending && pendingStatus === status}
             aria-pressed={current === status}
             variant={current === status ? 'primary' : 'secondary'}
             className="capitalize"
+            onClick={() => setPendingStatus(status)}
           >
-            {current === status
-              ? selectedLabels[status as keyof typeof selectedLabels]
-              : labels[status as keyof typeof labels]}
+            {pending && pendingStatus === status
+              ? pendingLabels[status as keyof typeof pendingLabels]
+              : current === status
+                ? selectedLabels[status as keyof typeof selectedLabels]
+                : labels[status as keyof typeof labels]}
           </Button>
         ))}
       </div>
+      {pending && pendingStatus && (
+        <p className="mt-1 text-sm" role="status">
+          {pendingLabels[pendingStatus as keyof typeof pendingLabels]}
+        </p>
+      )}
       {state.status === 'success' && (
         <p className="mt-1 text-sm" role="status">
           {state.message}
