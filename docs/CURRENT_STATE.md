@@ -25,17 +25,23 @@ The evaluation route prioritizes compact compatible opportunities, with score, w
 
 ## Not implemented
 
-Automatic learning, Lever collection, notifications, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications. A temporary server-side personal access gate protects a deployed MVP UI; it is not user authentication or RLS.
+Automatic learning, Lever collection, notification delivery channels, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications. A temporary server-side personal access gate protects a deployed MVP UI; it is not user authentication or RLS.
 
 ## Scheduled collection foundation
 
-Manual and scheduled collection share one server-side orchestration. GitHub Actions requests the protected scheduler route approximately hourly; it may be delayed and has not been validated in production. Collection runs are persisted, support partial failure, and enabled Lever configurations are safely skipped. Jobs close after three successful absences and reopen when seen again. Gemini, decisions, and notifications are never automatic. Companies provides “Executar coleta agora” and a compact last-run status.
+Manual and scheduled collection share one server-side orchestration. GitHub Actions requests the protected scheduler route approximately hourly; it may be delayed. Production validation confirmed `workflow_dispatch` and a successful scheduled run persisted with `trigger=scheduled`, including new jobs. Collection runs are persisted, support partial failure, and enabled Lever configurations are safely skipped. Jobs close after three successful absences and reopen when seen again. Gemini and decisions are never automatic. Companies provides “Executar coleta agora” and a compact last-run status.
 
-The scheduler workflow supports `workflow_dispatch` and uses only the repository-secret names `ROLEPILOT_SCHEDULER_URL` and `SCHEDULER_SECRET`. Migration `202608100001_collection_runs_and_job_lifecycle.sql` is applied and migration history is synchronized. Manual collection against the real Supabase database is validated; live GitHub Actions scheduled execution has **not** been performed.
+The scheduler workflow supports `workflow_dispatch` and uses only the repository-secret names `ROLEPILOT_SCHEDULER_URL` and `SCHEDULER_SECRET`. Migration `202608100001_collection_runs_and_job_lifecycle.sql` is applied and migration history is synchronized. Manual and scheduled GitHub Actions collection against the real Supabase database are validated.
 
 ## Migrations
 
-`202607290001_create_candidate_profiles.sql`, `202607290002_create_target_companies.sql`, `202607290003_create_jobs.sql`, `202608060001_create_job_user_statuses.sql`, and `202608090001_create_job_ai_analyses.sql`.
+`202607290001_create_candidate_profiles.sql`, `202607290002_create_target_companies.sql`, `202607290003_create_jobs.sql`, `202608060001_create_job_user_statuses.sql`, `202608090001_create_job_ai_analyses.sql`, `202608100001_collection_runs_and_job_lifecycle.sql`, and `202608100002_create_job_notification_events.sql`.
+
+## Notification foundation
+
+The database-backed `job_notification_events` outbox creates profile-isolated `new_eligible_job` events only after new jobs persist successfully. Eligibility and priority are deterministic; score 80+ is `excellent`, 70-79 is `good`, and lower eligible scores are `review`. The unique profile/job/event constraint makes repeated collections idempotent. Explicit decisions `saved`, `ignored`, `applied`, and `rejected` create a skipped record rather than a candidate. No backlog, unchanged observation, update, Gemini result, provider payload, secret, or delivery channel is involved.
+
+All persisted profiles are evaluated because this personal MVP has no active/enabled profile field, authentication, ownership, or RLS. Candidate-generation failures are recorded safely in the collection-run company result and do not undo successfully persisted jobs. Delivery workers and Telegram/email/Alexa remain future work.
 
 ## External integrations
 

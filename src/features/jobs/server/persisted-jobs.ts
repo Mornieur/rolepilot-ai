@@ -55,6 +55,12 @@ export async function listPersistedJobsByCompany(companyId: string): Promise<Per
   if (error) fail('list');
   return (data ?? []).map(toPersistedJob);
 }
+export async function listPersistedJobsByIds(ids: string[]): Promise<PersistedJob[]> {
+  if (!ids.length) return [];
+  const { data, error } = await getSupabaseServerClient().from('jobs').select('*').in('id', ids);
+  if (error) fail('list by ids');
+  return (data ?? []).map(toPersistedJob);
+}
 
 export async function persistCollectedJobs(
   companyId: string,

@@ -13,6 +13,7 @@ export type CompanyCollectionResult = {
   unchanged: number;
   malformed: number;
   skipped: number;
+  notificationErrorCategory?: 'notification';
   errorCategory?: 'timeout' | 'unavailable' | 'invalid-response' | 'unsupported' | 'persistence';
 };
 export type CollectionRunResult = {
@@ -30,5 +31,6 @@ export type CollectionRunResult = {
   unchanged: number;
   malformed: number;
   skipped: number;
+  notificationFailures?: number;
   companies: CompanyCollectionResult[];
 };

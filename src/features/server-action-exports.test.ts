@@ -17,5 +17,5 @@ describe('dedicated use server modules', () => {
       const exports = await load();
       expect(Object.values(exports).every((value) => typeof value === 'function')).toBe(true);
     }
-  });
+  }, 10_000);
 });

@@ -3,6 +3,7 @@ import { listTargetCompanies } from '@/features/companies/server/target-companie
 import { fetchGreenhouseJobs } from '@/features/job-sources/greenhouse/client';
 import { GreenhouseError } from '@/features/job-sources/greenhouse/errors';
 import { persistCollectedJobs } from '@/features/jobs/server/persisted-jobs';
+import { createNewEligibleJobNotificationEvents } from '@/features/job-notifications/server/job-notification-events';
 import {
   finishCollectionRun,
   startCollectionRun,
@@ -27,6 +28,7 @@ const empty = (trigger: CollectionTrigger, startedAt: string): CollectionRunResu
   unchanged: 0,
   malformed: 0,
   skipped: 0,
+  notificationFailures: 0,
   companies: [],
 });
 const category = (error: unknown): CompanyCollectionResult['errorCategory'] =>
@@ -89,6 +91,16 @@ export async function runCollection(
           malformed: saved.malformed,
           skipped: saved.skipped,
         };
+        const createdJobIds = (saved.jobs ?? [])
+          .filter((job) => job.status === 'created')
+          .map((job) => job.persistedJobId);
+        try {
+          await createNewEligibleJobNotificationEvents(createdJobIds);
+        } catch {
+          result.notificationFailures = (result.notificationFailures ?? 0) + 1;
+          companyResult.notificationErrorCategory = 'notification';
+          console.error('Notification candidate generation failed after job persistence.');
+        }
         result.companies.push(companyResult);
         result.companiesSucceeded += 1;
         for (const key of [

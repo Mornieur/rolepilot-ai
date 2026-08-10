@@ -88,6 +88,21 @@ export type CollectionRunRow = {
   skipped_count: number;
   company_results: unknown;
 };
+export type JobNotificationEventRow = {
+  id: string;
+  profile_id: string;
+  job_id: string;
+  event_type: 'new_eligible_job';
+  status: 'pending' | 'delivered' | 'failed' | 'skipped';
+  priority: 'excellent' | 'good' | 'review';
+  deterministic_score: number;
+  channel: string | null;
+  attempt_count: number;
+  last_attempt_at: string | null;
+  delivered_at: string | null;
+  error_classification: 'delivery-unavailable' | 'invalid-response' | 'unknown' | null;
+  created_at: string;
+};
 
 export type Database = {
   public: {
@@ -157,6 +172,38 @@ export type Database = {
             >
           >;
         Update: Partial<Omit<CollectionRunRow, 'id' | 'trigger' | 'started_at'>>;
+        Relationships: [];
+      };
+      job_notification_events: {
+        Row: JobNotificationEventRow;
+        Insert: Omit<
+          JobNotificationEventRow,
+          | 'id'
+          | 'created_at'
+          | 'attempt_count'
+          | 'last_attempt_at'
+          | 'delivered_at'
+          | 'error_classification'
+          | 'channel'
+        > &
+          Partial<
+            Pick<
+              JobNotificationEventRow,
+              | 'id'
+              | 'created_at'
+              | 'attempt_count'
+              | 'last_attempt_at'
+              | 'delivered_at'
+              | 'error_classification'
+              | 'channel'
+            >
+          >;
+        Update: Partial<
+          Omit<
+            JobNotificationEventRow,
+            'id' | 'profile_id' | 'job_id' | 'event_type' | 'created_at'
+          >
+        >;
         Relationships: [];
       };
     };

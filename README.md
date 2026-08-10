@@ -57,6 +57,8 @@ Apply the migrations in order through the Supabase SQL editor:
 3. `supabase/migrations/202607290003_create_jobs.sql`
 4. `supabase/migrations/202608060001_create_job_user_statuses.sql`
 5. `supabase/migrations/202608090001_create_job_ai_analyses.sql`
+6. `supabase/migrations/202608100001_collection_runs_and_job_lifecycle.sql`
+7. `supabase/migrations/202608100002_create_job_notification_events.sql`
 
 Then run `supabase/seed.sql` to insert generic example profiles and companies. It is non-destructive and does not reset data.
 
@@ -134,14 +136,14 @@ There is no user authentication or authorization. This version is intended only 
 - Greenhouse supports manual preview and explicit job persistence; Lever remains configuration-only.
 - Lever is configured but its connector remains planned.
 - Deterministic evaluation is available; manual Gemini analysis is persisted after successful validation.
-- Automatic collection and daily execution are not implemented.
-- Alerts are not implemented. The planned direction is Telegram first, WhatsApp later, and Alexa as an advanced integration.
+- Scheduled Greenhouse collection is active and production validation confirmed both `workflow_dispatch` and a scheduled run.
+- A durable notification outbox creates deterministic candidates for newly persisted eligible jobs; no delivery channel is active.
 - There is no authentication, user model, or multi-tenancy.
 
 ## Short roadmap
 
-1. Validate one manual Gemini analysis in a controlled local smoke test.
-2. Consider scheduled collection and notification channels only in a future approved phase.
+1. Add an approved delivery worker/channel for pending notification events.
+2. Add authentication/RLS before treating profile ownership as multi-user.
 
 ## Scheduled Greenhouse collection
 
@@ -149,4 +151,10 @@ Enabled Greenhouse companies can be collected from Companies through **Executar 
 
 The workflow needs repository secrets named `ROLEPILOT_SCHEDULER_URL` and `SCHEDULER_SECRET`. The application requires server-only `SCHEDULER_SECRET`; do not expose it with `NEXT_PUBLIC_`. Runs retain safe aggregate history, isolate failures, and prevent overlapping running runs. Jobs close only after three successful absences and reopen when seen. No Gemini, notifications, decisions, or applications are automatic.
 
-Migration `202608100001_collection_runs_and_job_lifecycle.sql` exists but is **not applied remotely**. The GitHub schedule has **not** been live-validated.
+The collection-lifecycle migration is applied and the GitHub scheduler was validated in production without recording secrets.
+
+## Notification candidate foundation
+
+After successful persistence, only newly created active jobs are evaluated against every persisted candidate profile in this personal MVP. Eligible pairs create at most one `new_eligible_job` outbox event per profile and job. Priority comes only from deterministic score: `excellent` (80+), `good` (70-79), and `review` (below 70). Existing `saved`, `ignored`, `applied`, or `rejected` decisions are recorded as skipped discovery events. Recollections, observation-only refreshes, source updates, and old backlog jobs create no events. Gemini is never called automatically.
+
+The event table is a durable delivery boundary with pending/delivered/failed/skipped states and retry fields, but no Telegram, email, Alexa, or other delivery integration exists yet. Candidate-generation failures do not roll back collected jobs; they are safely classified in the collection-run result.
