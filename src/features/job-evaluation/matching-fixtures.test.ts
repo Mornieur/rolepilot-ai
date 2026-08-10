@@ -43,13 +43,22 @@ const cases = [
   ],
   ['full stack frontend', base('Full Stack Engineer', 'React TypeScript frontend remote'), true],
   ['backend only', base('Backend Engineer', 'Java Spring remote'), false],
+  [
+    'backend software engineer remains distant when the profile also accepts generic engineering titles',
+    base('Senior Backend Software Engineer', 'Java Spring remote'),
+    false,
+  ],
   ['data engineer', base('Data Engineer', 'Python SQL remote'), false],
   ['cybersecurity', base('Cybersecurity Engineer', 'Security remote'), false],
   ['product manager', base('Product Manager', 'Roadmap remote'), false],
   ['sales', base('Sales Executive', 'Pipeline remote'), false],
+  ['account executive', base('Account Executive', 'Pipeline remote'), false],
+  ['customer success', base('Customer Success Manager', 'Customer retention remote'), false],
   ['HR', base('HR Business Partner', 'People remote'), false],
   ['finance', base('Finance Analyst', 'Excel remote'), false],
+  ['operations', base('Operations Manager', 'Process improvement remote'), false],
   ['legal', base('Legal Counsel', 'Contracts remote'), false],
+  ['data analyst', base('Data Analyst', 'SQL dashboards remote'), false],
   ['mid versus senior', base('Senior Frontend Engineer'), true],
   ['senior versus mid', base('Mid Frontend Engineer'), true],
   ['remote Portugal', { ...base('Frontend Engineer'), location: 'Portugal (Remote)' }, true],
@@ -93,5 +102,30 @@ describe('matching quality fixture dataset', () => {
     expect(evaluateJob(profile, base('Sales Executive', 'Pipeline remote')).reasons).toContainEqual(
       expect.objectContaining({ code: 'title', outcome: 'fail' }),
     );
+  });
+  it('requires frontend evidence for a generic software-engineering target', () => {
+    const genericEngineeringProfile = {
+      ...profile,
+      desiredRoles: [...profile.desiredRoles, 'Software Engineer'],
+    };
+
+    expect(
+      evaluateJob(
+        genericEngineeringProfile,
+        base('Senior Backend Software Engineer', 'Java Spring remote'),
+      ).titleMatch.matched,
+    ).toBe(false);
+    expect(
+      evaluateJob(
+        genericEngineeringProfile,
+        base('Senior Software Engineer', 'React TypeScript frontend remote'),
+      ).eligible,
+    ).toBe(true);
+    expect(
+      evaluateJob(
+        genericEngineeringProfile,
+        base('Senior Software Engineer - Android', 'React TypeScript UI design system remote'),
+      ).titleMatch.matched,
+    ).toBe(false);
   });
 });

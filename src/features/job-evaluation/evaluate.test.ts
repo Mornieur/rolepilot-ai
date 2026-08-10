@@ -131,6 +131,43 @@ describe('deterministic job evaluator', () => {
     expect(result.eligible).toBe(true);
   });
 
+  it('distinguishes warnings from hard work-model rejections', () => {
+    const seniorityMismatch = evaluateJob({ ...profile, acceptedSeniorities: ['mid'] }, job());
+    expect(seniorityMismatch.eligible).toBe(true);
+    expect(seniorityMismatch.reasons).toContainEqual(
+      expect.objectContaining({ code: 'seniority', outcome: 'neutral' }),
+    );
+
+    const locationMismatch = evaluateJob({ ...profile, locations: ['Rio de Janeiro'] }, job());
+    expect(locationMismatch.eligible).toBe(true);
+    expect(locationMismatch.reasons).toContainEqual(
+      expect.objectContaining({ code: 'location', outcome: 'neutral' }),
+    );
+
+    const incompatibleWorkModel = evaluateJob(
+      profile,
+      job({ descriptionText: 'Onsite position using React and TypeScript.' }),
+    );
+    expect(incompatibleWorkModel.eligible).toBe(false);
+    expect(incompatibleWorkModel.reasons).toContainEqual({
+      code: 'work-model',
+      outcome: 'fail',
+      message: 'Modelo de trabalho incompatível com o perfil.',
+    });
+
+    const unknownWorkModel = evaluateJob(
+      profile,
+      job({ location: null, descriptionText: 'React and TypeScript are used.' }),
+    );
+    expect(unknownWorkModel.reasons).toContainEqual(
+      expect.objectContaining({ code: 'work-model', outcome: 'neutral' }),
+    );
+
+    expect(evaluateJob(profile, job()).reasons).toContainEqual(
+      expect.objectContaining({ code: 'work-model', outcome: 'pass' }),
+    );
+  });
+
   it('sorts eligible results, then score, freshness, title, and id deterministically', () => {
     const eligible = evaluateJob(profile, job());
     const rejected = evaluateJob(profile, job({ id: 'rejected', descriptionText: 'React only.' }));
