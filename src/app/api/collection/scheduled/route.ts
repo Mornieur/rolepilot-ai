@@ -3,6 +3,8 @@ import { runCollection } from '@/features/job-collection/server/run-collection';
 import { CollectionAlreadyRunningError } from '@/features/job-collection/server/collection-runs';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 function authorized(request: Request) {
   const secret = process.env.SCHEDULER_SECRET;

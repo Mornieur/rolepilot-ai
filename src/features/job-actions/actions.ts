@@ -3,11 +3,13 @@ import { JobStatusDataError, saveStatus } from '@/features/job-actions/server/jo
 import { jobStatusInputSchema } from '@/features/job-actions/schema';
 import { getCandidateProfileById } from '@/features/profiles/server/candidate-profiles';
 import { getPersistedJobById } from '@/features/jobs/server/persisted-jobs';
+import { requirePersonalAccess } from '@/lib/personal-access-server';
 import type { JobStatusActionState } from '@/features/job-actions/action-state';
 export async function saveJobStatusAction(
   _: JobStatusActionState,
   formData: FormData,
 ): Promise<JobStatusActionState> {
+  await requirePersonalAccess();
   const parsed = jobStatusInputSchema.safeParse({
     profileId: formData.get('profileId'),
     jobId: formData.get('jobId'),

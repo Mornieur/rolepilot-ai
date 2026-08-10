@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { requirePersonalAccess } from '@/lib/personal-access-server';
 
 import {
   candidateProfileIdSchema,
@@ -39,6 +40,7 @@ export async function createCandidateProfileAction(
   _: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
+  await requirePersonalAccess();
   const parsed = parseCandidateProfileFormData(formData);
   if (!parsed.success) return validationState(parsed.error);
   try {
@@ -54,6 +56,7 @@ export async function updateCandidateProfileAction(
   _: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
+  await requirePersonalAccess();
   const id = candidateProfileIdSchema.safeParse(formData.get('id'));
   const parsed = parseCandidateProfileFormData(formData);
   if (!id.success) return { status: 'error', message: 'The profile could not be identified.' };
@@ -71,6 +74,7 @@ export async function deleteCandidateProfileAction(
   _: ProfileActionState,
   formData: FormData,
 ): Promise<ProfileActionState> {
+  await requirePersonalAccess();
   const id = candidateProfileIdSchema.safeParse(formData.get('id'));
   if (!id.success) return { status: 'error', message: 'The profile could not be identified.' };
   try {

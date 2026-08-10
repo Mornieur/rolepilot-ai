@@ -7,11 +7,13 @@ import {
   JobAiAnalysisDataError,
   persistSuccessfulAiAnalysis,
 } from '@/features/ai-job-analysis/server/job-ai-analyses';
+import { requirePersonalAccess } from '@/lib/personal-access-server';
 const ids = z.object({ profileId: z.string().uuid(), jobId: z.string().uuid() });
 export async function analyzeJobAction(
   _: AiAnalysisActionState,
   formData: FormData,
 ): Promise<AiAnalysisActionState> {
+  await requirePersonalAccess();
   const parsed = ids.safeParse({
     profileId: formData.get('profileId'),
     jobId: formData.get('jobId'),

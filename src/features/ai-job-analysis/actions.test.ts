@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 const dependencies = vi.hoisted(() => ({ generate: vi.fn(), persist: vi.fn() }));
 vi.mock('@/features/ai-job-analysis/analyze-job', () => ({
   generateEligibleJobAnalysis: dependencies.generate,
