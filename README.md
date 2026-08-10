@@ -142,3 +142,11 @@ There is no authentication or authorization. This version is intended only as a 
 
 1. Validate one manual Gemini analysis in a controlled local smoke test.
 2. Consider scheduled collection and notification channels only in a future approved phase.
+
+## Scheduled Greenhouse collection
+
+Enabled Greenhouse companies can be collected from Companies through **Executar coleta agora**. The same server-side orchestration is called by the protected `POST /api/collection/scheduled` endpoint. The GitHub Actions workflow schedules an approximate hourly request (`17 * * * *`) and supports `workflow_dispatch`; scheduled GitHub workflows may run late.
+
+The workflow needs repository secrets named `ROLEPILOT_SCHEDULER_URL` and `SCHEDULER_SECRET`. The application requires server-only `SCHEDULER_SECRET`; do not expose it with `NEXT_PUBLIC_`. Runs retain safe aggregate history, isolate failures, and prevent overlapping running runs. Jobs close only after three successful absences and reopen when seen. No Gemini, notifications, decisions, or applications are automatic.
+
+Migration `202608100001_collection_runs_and_job_lifecycle.sql` exists but is **not applied remotely**. The GitHub schedule has **not** been live-validated.

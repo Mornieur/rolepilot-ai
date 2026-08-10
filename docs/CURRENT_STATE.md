@@ -25,7 +25,13 @@ The evaluation route prioritizes compact compatible opportunities, with score, w
 
 ## Not implemented
 
-Automatic learning, scheduling, Lever collection, notifications, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications.
+Automatic learning, Lever collection, notifications, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications.
+
+## Scheduled collection foundation
+
+Manual and scheduled collection share one server-side orchestration. GitHub Actions requests the protected scheduler route approximately hourly; it may be delayed and has not been validated in production. Collection runs are persisted, support partial failure, and enabled Lever configurations are safely skipped. Jobs close after three successful absences and reopen when seen again. Gemini, decisions, and notifications are never automatic. Companies provides “Executar coleta agora” and a compact last-run status.
+
+The scheduler workflow supports `workflow_dispatch` and uses only the repository-secret names `ROLEPILOT_SCHEDULER_URL` and `SCHEDULER_SECRET`. Migration `202608100001_collection_runs_and_job_lifecycle.sql` is created but **not applied remotely**. Live scheduled execution has **not** been performed.
 
 ## Migrations
 

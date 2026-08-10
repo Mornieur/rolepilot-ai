@@ -54,6 +54,9 @@ export type PersistedJob = {
   lastSeenAt: string;
   createdAt: string;
   updatedAt: string;
+  isActive?: boolean;
+  missingSuccessfulRuns?: number;
+  closedAt?: string | null;
 };
 export const jobUserStatuses = ['new', 'saved', 'ignored', 'applied', 'rejected'] as const;
 export type JobUserStatus = (typeof jobUserStatuses)[number];

@@ -41,6 +41,9 @@ export type PersistedJobRow = {
   last_seen_at: string;
   created_at: string;
   updated_at: string;
+  is_active?: boolean;
+  missing_successful_runs?: number;
+  closed_at?: string | null;
 };
 export type JobUserStatusRow = {
   id: string;
@@ -67,6 +70,23 @@ export type JobAiAnalysisRow = {
   total_tokens: number | null;
   input_fingerprint: string | null;
   created_at: string;
+};
+export type CollectionRunRow = {
+  id: string;
+  trigger: string;
+  status: string;
+  started_at: string;
+  finished_at: string | null;
+  companies_attempted: number;
+  companies_succeeded: number;
+  companies_failed: number;
+  discovered_count: number;
+  created_count: number;
+  updated_count: number;
+  unchanged_count: number;
+  malformed_count: number;
+  skipped_count: number;
+  company_results: unknown;
 };
 
 export type Database = {
@@ -100,6 +120,43 @@ export type Database = {
         Row: JobAiAnalysisRow;
         Insert: Omit<JobAiAnalysisRow, 'id' | 'created_at'> & { id?: string; created_at?: string };
         Update: never;
+        Relationships: [];
+      };
+      collection_runs: {
+        Row: CollectionRunRow;
+        Insert: Omit<
+          CollectionRunRow,
+          | 'id'
+          | 'started_at'
+          | 'finished_at'
+          | 'companies_attempted'
+          | 'companies_succeeded'
+          | 'companies_failed'
+          | 'discovered_count'
+          | 'created_count'
+          | 'updated_count'
+          | 'unchanged_count'
+          | 'malformed_count'
+          | 'skipped_count'
+          | 'company_results'
+        > &
+          Partial<
+            Pick<
+              CollectionRunRow,
+              | 'finished_at'
+              | 'companies_attempted'
+              | 'companies_succeeded'
+              | 'companies_failed'
+              | 'discovered_count'
+              | 'created_count'
+              | 'updated_count'
+              | 'unchanged_count'
+              | 'malformed_count'
+              | 'skipped_count'
+              | 'company_results'
+            >
+          >;
+        Update: Partial<Omit<CollectionRunRow, 'id' | 'trigger' | 'started_at'>>;
         Relationships: [];
       };
     };
