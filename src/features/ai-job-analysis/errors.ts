@@ -14,6 +14,7 @@ export const aiError = {
     new AiJobAnalysisError('AI analysis is temporarily rate limited. Please retry later.'),
   refused: () => new AiJobAnalysisError('AI analysis was refused. Please review the job manually.'),
   invalid: () => new AiJobAnalysisError('AI analysis returned an invalid structured result.'),
+  persistence: () => new AiJobAnalysisError('AI analysis could not be saved. Please try again.'),
   unavailable: () =>
     new AiJobAnalysisError('AI analysis is temporarily unavailable. Please retry.'),
 };

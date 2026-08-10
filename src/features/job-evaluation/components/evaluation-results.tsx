@@ -6,14 +6,17 @@ import type { DeterministicJobEvaluation } from '@/features/job-evaluation/types
 import { AiAnalysisCard } from '@/features/ai-job-analysis/components/ai-analysis-card';
 import { JobStatusControls } from '@/features/job-actions/components/job-status-controls';
 import type { JobUserStatus } from '@/types/domain';
+import type { PersistedAiJobAnalysis } from '@/features/ai-job-analysis/types';
 
 type Filter = 'all' | 'eligible' | 'rejected';
 export function EvaluationResults({
   results,
   statuses = {},
+  latestAnalyses = {},
 }: {
   results: DeterministicJobEvaluation[];
   statuses?: Record<string, JobUserStatus>;
+  latestAnalyses?: Record<string, PersistedAiJobAnalysis & { stale: boolean }>;
 }) {
   const [filter, setFilter] = useState<Filter>('all');
   const visible = results.filter((result) => filter === 'all' || result.status === filter);
@@ -73,7 +76,7 @@ export function EvaluationResults({
                     <AiAnalysisCard
                       profileId={result.profileId}
                       jobId={result.job.id}
-                      score={result.score}
+                      latestAnalysis={latestAnalyses[result.job.id]}
                     />
                   ) : (
                     <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
