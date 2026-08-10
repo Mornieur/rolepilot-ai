@@ -35,9 +35,11 @@ The scheduler workflow supports `workflow_dispatch` and uses only the repository
 
 ## Migrations
 
-`202607290001_create_candidate_profiles.sql`, `202607290002_create_target_companies.sql`, `202607290003_create_jobs.sql`, `202608060001_create_job_user_statuses.sql`, `202608090001_create_job_ai_analyses.sql`, `202608100001_collection_runs_and_job_lifecycle.sql`, and `202608100002_create_job_notification_events.sql`.
+`202607290001_create_candidate_profiles.sql`, `202607290002_create_target_companies.sql`, `202607290003_create_jobs.sql`, `202608060001_create_job_user_statuses.sql`, `202608090001_create_job_ai_analyses.sql`, `202608100001_collection_runs_and_job_lifecycle.sql`, `202608100002_create_job_notification_events.sql`, and `202608100003_expand_notification_error_classifications.sql`.
 
 ## Notification foundation
+
+Telegram is the first delivery channel: a dedicated protected worker handles bounded batches of pending events and records safe retry metadata. It does not call Gemini. Delivery is at-least-once because a successful provider response followed by a database persistence failure can be retried. Email, WhatsApp, Alexa, multi-channel routing, user configuration, authentication, and RLS remain future work.
 
 The database-backed `job_notification_events` outbox creates profile-isolated `new_eligible_job` events only after new jobs persist successfully. Eligibility and priority are deterministic; score 80+ is `excellent`, 70-79 is `good`, and lower eligible scores are `review`. The unique profile/job/event constraint makes repeated collections idempotent. Explicit decisions `saved`, `ignored`, `applied`, and `rejected` create a skipped record rather than a candidate. No backlog, unchanged observation, update, Gemini result, provider payload, secret, or delivery channel is involved.
 

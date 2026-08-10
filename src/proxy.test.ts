@@ -37,4 +37,9 @@ describe('personal MVP access proxy', () => {
     const response = proxy(new NextRequest('https://rolepilot.example/api/collection/scheduled'));
     expect(response.status).toBe(200);
   });
+
+  it('does not apply user access protection to the separately authenticated notification worker', () => {
+    const response = proxy(new NextRequest('https://rolepilot.example/api/notifications/deliver'));
+    expect(response.status).toBe(200);
+  });
 });
