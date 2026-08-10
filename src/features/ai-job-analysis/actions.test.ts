@@ -8,7 +8,8 @@ vi.mock('@/features/ai-job-analysis/server/job-ai-analyses', () => ({
   JobAiAnalysisDataError: class JobAiAnalysisDataError extends Error {},
   persistSuccessfulAiAnalysis: dependencies.persist,
 }));
-import { analyzeJobAction, initialAiAnalysisActionState } from './actions';
+import { analyzeJobAction } from './actions';
+import { initialAiAnalysisActionState } from './action-state';
 
 const form = () => new FormData();
 describe('AI analysis action persistence flow', () => {

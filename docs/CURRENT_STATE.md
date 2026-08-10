@@ -2,8 +2,7 @@
 
 ## Repository
 
-- Branch: `develop`.
-- FeitozaUI visual rollout is ready for commit validation; always verify the working tree before committing.
+- Sempre confirme a branch e o working tree com Git antes de continuar.
 
 ## Runtime provider
 
@@ -13,6 +12,10 @@
 ## Implemented
 
 Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, manual structured Gemini analysis with persisted history, job actions, deterministic insights, and the FeitozaUI visual rollout are implemented.
+
+A interface do MVP é em português. A navegação principal expõe Início, Perfis, Empresas, Vagas, Avaliar vagas e Insights. `excludedSkills` pode ficar vazio e é persistido como uma lista vazia.
+
+Não há ocorrência de `fdprocessedid` no código-fonte. Um aviso de hidratação contendo esse atributo deve ser investigado sem extensões do navegador antes de atribuí-lo ao RolePilot; não há `suppressHydrationWarning` como paliativo.
 
 Job actions are independent per profile and job pair. `new` means no explicit decision; persisted decisions are `saved`, `ignored`, `applied`, and `rejected`. Manual transitions are allowed. The dashboard has isolated per-profile counters. Notes exist in the database but not in the UI.
 
@@ -26,7 +29,7 @@ Automatic learning, scheduling, Lever collection, notifications, authentication/
 
 ## External integrations
 
-Greenhouse is manual and read-only until explicit collection. Supabase stores product data. Gemini analysis is manual and advisory.
+Greenhouse é manual e somente leitura até o salvamento explícito. A prévia normaliza descrições como texto simples; registros antigos que preservaram marcação precisam ser coletados novamente para ficar limpos. A coleta importa o painel publicado inteiro e a compatibilidade é calculada depois para cada perfil. Supabase stores product data. Gemini analysis is manual and advisory.
 
 ## Current milestone
 

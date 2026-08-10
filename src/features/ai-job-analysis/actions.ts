@@ -2,16 +2,11 @@
 import { z } from 'zod';
 import { generateEligibleJobAnalysis } from '@/features/ai-job-analysis/analyze-job';
 import { AiJobAnalysisError } from '@/features/ai-job-analysis/errors';
-import type { PersistedAiJobAnalysis } from '@/features/ai-job-analysis/types';
+import type { AiAnalysisActionState } from '@/features/ai-job-analysis/action-state';
 import {
   JobAiAnalysisDataError,
   persistSuccessfulAiAnalysis,
 } from '@/features/ai-job-analysis/server/job-ai-analyses';
-export type AiAnalysisActionState =
-  | { status: 'idle' }
-  | { status: 'success'; analysis: PersistedAiJobAnalysis }
-  | { status: 'error'; message: string };
-export const initialAiAnalysisActionState: AiAnalysisActionState = { status: 'idle' };
 const ids = z.object({ profileId: z.string().uuid(), jobId: z.string().uuid() });
 export async function analyzeJobAction(
   _: AiAnalysisActionState,

@@ -7,29 +7,12 @@ import {
 } from '@/features/companies/server/target-companies';
 import { GreenhouseError } from '@/features/job-sources/greenhouse/errors';
 import { fetchGreenhouseJobs } from '@/features/job-sources/greenhouse/client';
-import type { ExternalJobPreview } from '@/features/job-sources/greenhouse/types';
-import {
-  persistCollectedJobs,
-  type JobCollectionResult,
-  PersistedJobDataError,
-} from '@/features/jobs/server/persisted-jobs';
+import { persistCollectedJobs, PersistedJobDataError } from '@/features/jobs/server/persisted-jobs';
 import { revalidatePath } from 'next/cache';
-
-export type GreenhousePreviewActionState = {
-  status: 'idle' | 'success' | 'empty' | 'error';
-  message?: string;
-  jobs?: ExternalJobPreview[];
-  total?: number;
-  skippedJobs?: number;
-  requestedAt?: string;
-};
-export const initialGreenhousePreviewState: GreenhousePreviewActionState = { status: 'idle' };
-export type GreenhouseCollectionActionState = {
-  status: 'idle' | 'success' | 'error';
-  message?: string;
-  result?: JobCollectionResult;
-};
-export const initialGreenhouseCollectionState: GreenhouseCollectionActionState = { status: 'idle' };
+import type {
+  GreenhouseCollectionActionState,
+  GreenhousePreviewActionState,
+} from '@/features/job-sources/greenhouse/action-state';
 
 export async function previewGreenhouseJobsAction(
   _: GreenhousePreviewActionState,

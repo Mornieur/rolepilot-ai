@@ -53,8 +53,8 @@ describe('InsightsPage', () => {
         searchParams: Promise.resolve({ profileId: profile.id, period: '30d' }),
       }),
     );
-    expect(screen.getByLabelText('Candidate profile')).toHaveValue(profile.id);
-    expect(screen.getByLabelText('Period')).toHaveValue('30d');
+    expect(screen.getByLabelText('Perfil')).toHaveValue(profile.id);
+    expect(screen.getByLabelText('Período')).toHaveValue('30d');
     expect(screen.getByText('Collected jobs').parentElement).toHaveTextContent('2');
     expect(screen.getByText('Companies with most collected jobs')).toBeInTheDocument();
     expect(screen.getByText('Remote')).toBeInTheDocument();
@@ -68,10 +68,10 @@ describe('InsightsPage', () => {
         searchParams: Promise.resolve({ profileId: secondProfile.id, period: '7d' }),
       }),
     );
-    expect(screen.getByLabelText('Candidate profile')).toHaveValue(secondProfile.id);
-    expect(screen.getByLabelText('Period')).toHaveValue('7d');
-    expect(dependencies.insights).toHaveBeenCalledWith(secondProfile.id, '7d');
-    expect(screen.getByText('No collected jobs exist for this period.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Perfil')).toHaveValue(secondProfile.id);
+    expect(screen.getByLabelText('Período')).toHaveValue('7d');
+    expect(dependencies.insights).toHaveBeenCalledWith(secondProfile.id, '7d', 'all');
+    expect(screen.getByText('Não há vagas coletadas neste período.')).toBeInTheDocument();
     view.unmount();
     dependencies.insights.mockRejectedValue(new Error('no connection'));
     render(
@@ -79,7 +79,9 @@ describe('InsightsPage', () => {
         searchParams: Promise.resolve({ profileId: profile.id, period: 'invalid' }),
       }),
     );
-    expect(screen.getByLabelText('Period')).toHaveValue('30d');
-    expect(screen.getByRole('alert')).toHaveTextContent('Insights are unavailable right now.');
+    expect(screen.getByLabelText('Período')).toHaveValue('30d');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Insights estão indisponíveis neste momento.',
+    );
   });
 });

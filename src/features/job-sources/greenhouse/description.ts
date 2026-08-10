@@ -20,10 +20,11 @@ function decodeEntity(entity: string) {
 export function greenhouseHtmlToText(content: string | null | undefined) {
   if (!content) return null;
   const text = content
-    .replace(/<(br\s*\/?|\/?(?:p|div|li|h[1-6]))\s*>/gi, '\n')
+    .replace(/<\/?(?:br|p|div|li|h[1-6])\b[^>]*>/gi, '\n')
     .replace(/<[^>]*>/g, '')
     .replace(/&(?:amp|lt|gt|quot|nbsp);|&#(?:x[\da-f]+|\d+);/gi, decodeEntity)
     .replace(/[\t \r]+/g, ' ')
+    .replace(/ *\n */g, '\n')
     .replace(/\n\s*\n\s*/g, '\n\n')
     .trim();
   return text || null;

@@ -4,12 +4,7 @@ import { jobStatusInputSchema } from '@/features/job-actions/schema';
 import { getCandidateProfileById } from '@/features/profiles/server/candidate-profiles';
 import { getPersistedJobById } from '@/features/jobs/server/persisted-jobs';
 import { revalidatePath } from 'next/cache';
-export type JobStatusActionState = {
-  status: 'idle' | 'success' | 'error';
-  current?: string;
-  message?: string;
-};
-export const initialJobStatusActionState: JobStatusActionState = { status: 'idle' };
+import type { JobStatusActionState } from '@/features/job-actions/action-state';
 export async function saveJobStatusAction(
   _: JobStatusActionState,
   formData: FormData,

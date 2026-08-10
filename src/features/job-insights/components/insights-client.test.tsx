@@ -21,9 +21,9 @@ describe('FeitozaUI insights client boundary', () => {
         <InsightsEmpty />
       </InsightsClient>,
     );
-    expect(screen.getByLabelText('Candidate profile')).toHaveValue(profile.id);
-    expect(screen.getByLabelText('Period')).toHaveValue('30d');
-    expect(screen.getByRole('button', { name: 'Update insights' })).toBeInTheDocument();
-    expect(screen.getByText('No collected jobs exist for this period.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Perfil')).toHaveValue(profile.id);
+    expect(screen.getByLabelText('Período')).toHaveValue('30d');
+    expect(screen.getByRole('button', { name: 'Atualizar insights' })).toBeInTheDocument();
+    expect(screen.getByText('Não há vagas coletadas neste período.')).toBeInTheDocument();
   });
 });

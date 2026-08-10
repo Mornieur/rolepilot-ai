@@ -6,7 +6,11 @@ import { getCandidateProfileById } from '@/features/profiles/server/candidate-pr
 import { aiError, AiJobAnalysisError } from '@/features/ai-job-analysis/errors';
 import { AI_JOB_ANALYSIS_INSTRUCTIONS } from '@/features/ai-job-analysis/prompt';
 import { shapeAiJobRequest } from '@/features/ai-job-analysis/request-shaping';
-import { aiJobAnalysisJsonSchema, aiJobAnalysisSchema } from '@/features/ai-job-analysis/schema';
+import {
+  aiJobAnalysisJsonSchema,
+  aiJobAnalysisSchema,
+  classifyAiAnalysisValidationFailure,
+} from '@/features/ai-job-analysis/schema';
 import { AI_JOB_ANALYSIS_SCHEMA_VERSION } from '@/features/ai-job-analysis/schema';
 import { getAiAnalysisInputFingerprint } from '@/features/ai-job-analysis/fingerprint';
 import type { AiJobAnalysis, GeneratedAiJobAnalysis } from '@/features/ai-job-analysis/types';
@@ -54,8 +58,11 @@ export async function generateEligibleJobAnalysis(
       throw aiError.invalid();
     }
     const parsed = aiJobAnalysisSchema.safeParse(output);
-    if (!parsed.success || parsed.data.deterministicAssessment.score !== evaluation.score)
+    if (!parsed.success) {
+      classifyAiAnalysisValidationFailure(parsed.error, output);
       throw aiError.invalid();
+    }
+    if (parsed.data.deterministicAssessment.score !== evaluation.score) throw aiError.invalid();
     const usage = response.usageMetadata;
     return {
       profileId,

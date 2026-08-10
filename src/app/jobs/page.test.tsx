@@ -34,18 +34,22 @@ describe('JobsPage', () => {
 
     render(await JobsPage());
 
-    expect(screen.getByRole('heading', { name: 'Collected source jobs' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Vagas coletadas' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: job.title })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /open original source/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /abrir fonte original/i })).toHaveAttribute(
       'href',
       job.originalUrl,
+    );
+    expect(screen.getByRole('link', { name: 'Avaliar vagas' })).toHaveAttribute(
+      'href',
+      '/jobs/evaluate',
     );
   });
 
   it('renders controlled empty and error states', async () => {
     dependencies.loadPersistedJobs.mockResolvedValue({ jobs: [], error: null });
     const view = render(await JobsPage());
-    expect(screen.getByText('No jobs collected yet')).toBeInTheDocument();
+    expect(screen.getByText('Nenhuma vaga coletada ainda')).toBeInTheDocument();
 
     view.unmount();
     dependencies.loadPersistedJobs.mockResolvedValue({

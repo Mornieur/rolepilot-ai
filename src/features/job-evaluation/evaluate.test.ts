@@ -51,11 +51,11 @@ describe('deterministic job evaluator', () => {
     expect(result.titleMatch.matched).toBe(true);
   });
 
-  it('rejects missing required terms even when other terms match', () => {
+  it('keeps partial required-skill coverage discoverable with an explicit warning', () => {
     const result = evaluateJob(profile, job({ descriptionText: 'Remote role using React only.' }));
-    expect(result.eligible).toBe(false);
+    expect(result.eligible).toBe(true);
     expect(result.reasons).toContainEqual(
-      expect.objectContaining({ code: 'required', outcome: 'fail' }),
+      expect.objectContaining({ code: 'required-partial', outcome: 'neutral' }),
     );
   });
 
@@ -98,13 +98,13 @@ describe('deterministic job evaluator', () => {
     expect(unknown.eligible).toBe(true);
   });
 
-  it('rejects an explicit incompatible location and work model, but keeps missing values neutral', () => {
+  it('keeps international remote discoverable while rejecting explicit incompatible work models', () => {
     expect(
       evaluateJob(
         profile,
         job({ location: 'New York', descriptionText: 'Remote role using React and TypeScript.' }),
       ).eligible,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       evaluateJob(
         profile,

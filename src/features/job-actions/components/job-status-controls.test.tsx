@@ -10,7 +10,6 @@ const ui = vi.hoisted(() => ({
   pending: false,
 }));
 vi.mock('@/features/job-actions/actions', () => ({
-  initialJobStatusActionState: { status: 'idle' },
   saveJobStatusAction: vi.fn(),
 }));
 vi.mock('react', async (importOriginal) => ({

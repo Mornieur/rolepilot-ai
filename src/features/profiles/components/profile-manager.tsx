@@ -6,10 +6,12 @@ import Link from 'next/link';
 import {
   createCandidateProfileAction,
   deleteCandidateProfileAction,
-  initialProfileActionState,
-  type ProfileActionState,
   updateCandidateProfileAction,
 } from '@/features/profiles/actions';
+import {
+  initialProfileActionState,
+  type ProfileActionState,
+} from '@/features/profiles/action-state';
 import { canDeleteCandidateProfile } from '@/features/profiles/profile-policy';
 import type { CandidateProfile, Seniority, WorkModel } from '@/types/domain';
 import { Surface } from '@feitoza-ui/core';
@@ -26,30 +28,30 @@ export function ProfileManager({ profiles }: ProfileManagerProps) {
           href="/"
           className="text-sm font-medium text-blue-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-cyan-300 dark:focus:ring-cyan-400"
         >
-          Back to dashboard
+          Voltar ao início
         </Link>
         <header className="mt-6 border-b border-slate-200 pb-6 dark:border-slate-700">
           <p className="text-sm font-semibold tracking-[0.18em] text-blue-700 uppercase dark:text-cyan-300">
             RolePilot AI
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Candidate profiles</h1>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Perfis</h1>
           <p className="mt-2 max-w-2xl text-slate-600 dark:text-slate-300">
-            Profiles are stored in Supabase. Enter list values as comma-separated text.
+            Os perfis são salvos no Supabase. Informe listas separadas por vírgula.
           </p>
         </header>
         <section className="mt-8" aria-labelledby="create-profile">
           <h2 id="create-profile" className="text-xl font-semibold">
-            Create profile
+            Criar perfil
           </h2>
-          <ProfileForm action={createCandidateProfileAction} submitLabel="Create profile" />
+          <ProfileForm action={createCandidateProfileAction} submitLabel="Criar perfil" />
         </section>
         <section className="mt-10" aria-labelledby="saved-profiles">
           <h2 id="saved-profiles" className="text-xl font-semibold">
-            Saved profiles
+            Perfis salvos
           </h2>
           {profiles.length === 0 ? (
             <p className="mt-3 rounded-lg border border-slate-200 bg-white p-5 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-              No profiles yet. Create the first profile above to use the dashboard.
+              Nenhum perfil ainda. Crie o primeiro perfil acima para usar o início.
             </p>
           ) : (
             <div className="mt-4 space-y-4">
@@ -80,7 +82,7 @@ function ProfileCard({
         <div className="mt-5">
           <ProfileForm
             action={updateCandidateProfileAction}
-            submitLabel="Save changes"
+            submitLabel="Salvar alterações"
             profile={profile}
           />
           <DeleteProfile id={profile.id} disabled={!canDeleteCandidateProfile(totalProfiles)} />
@@ -110,55 +112,55 @@ function ProfileForm({
       {profile && <input type="hidden" name="id" value={profile.id} />}
       <TextField
         name="name"
-        label="Profile name"
+        label="Nome do perfil"
         value={values.name}
         error={state.fieldErrors?.name?.[0]}
         required
       />
       <TextField
         name="desiredRoles"
-        label="Desired roles"
+        label="Cargos desejados"
         value={values.desiredRoles.join(', ')}
         error={state.fieldErrors?.desiredRoles?.[0]}
-        hint="Example: Frontend Engineer, React Engineer"
+        hint="Exemplo: Frontend Engineer, React Engineer"
         required
       />
       <CheckGroup
         name="acceptedSeniorities"
-        label="Accepted seniorities"
+        label="Senioridades aceitas"
         options={seniorityOptions}
         selected={values.acceptedSeniorities}
         error={state.fieldErrors?.acceptedSeniorities?.[0]}
       />
       <CheckGroup
         name="acceptedWorkModels"
-        label="Accepted work models"
+        label="Modelos de trabalho aceitos"
         options={workModelOptions}
         selected={values.acceptedWorkModels}
         error={state.fieldErrors?.acceptedWorkModels?.[0]}
       />
       <TextField
         name="requiredSkills"
-        label="Required skills"
+        label="Competências obrigatórias"
         value={values.requiredSkills.join(', ')}
         error={state.fieldErrors?.requiredSkills?.[0]}
         required
       />
       <TextField
         name="preferredSkills"
-        label="Preferred skills"
+        label="Competências preferenciais"
         value={values.preferredSkills.join(', ')}
         error={state.fieldErrors?.preferredSkills?.[0]}
       />
       <TextField
         name="excludedSkills"
-        label="Excluded skills"
+        label="Competências excluídas"
         value={values.excludedSkills.join(', ')}
         error={state.fieldErrors?.excludedSkills?.[0]}
       />
       <TextField
         name="locations"
-        label="Locations"
+        label="Localizações"
         value={values.locations.join(', ')}
         error={state.fieldErrors?.locations?.[0]}
         required
@@ -170,7 +172,7 @@ function ProfileForm({
           disabled={pending}
           className="mt-3 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-wait disabled:opacity-60"
         >
-          {pending ? 'Saving…' : submitLabel}
+          {pending ? 'Salvando…' : submitLabel}
         </button>
       </div>
     </form>
@@ -186,7 +188,7 @@ function DeleteProfile({ id, disabled }: { id: string; disabled: boolean }) {
     <form
       action={formAction}
       onSubmit={(event) => {
-        if (!disabled && !window.confirm('Delete this candidate profile? This cannot be undone.'))
+        if (!disabled && !window.confirm('Excluir este perfil? Esta ação não pode ser desfeita.'))
           event.preventDefault();
       }}
       className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700"
@@ -196,14 +198,14 @@ function DeleteProfile({ id, disabled }: { id: string; disabled: boolean }) {
       <button
         type="submit"
         disabled={disabled || pending}
-        title={disabled ? 'At least one candidate profile must remain.' : undefined}
+        title={disabled ? 'Pelo menos um perfil deve permanecer.' : undefined}
         className="mt-2 rounded-md border border-red-300 px-3 py-2 text-sm font-semibold text-red-800 focus:outline-none focus:ring-2 focus:ring-red-200 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 dark:border-red-800 dark:text-red-300 dark:focus:ring-red-800 dark:disabled:border-slate-700"
       >
-        {pending ? 'Deleting…' : 'Delete profile'}
+        {pending ? 'Excluindo…' : 'Excluir perfil'}
       </button>
       {disabled && (
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          At least one candidate profile must remain.
+          Pelo menos um perfil deve permanecer.
         </p>
       )}
     </form>

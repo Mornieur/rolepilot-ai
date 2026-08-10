@@ -2,7 +2,8 @@
 
 import { useActionState } from 'react';
 import { Button } from '@feitoza-ui/core';
-import { initialJobStatusActionState, saveJobStatusAction } from '@/features/job-actions/actions';
+import { saveJobStatusAction } from '@/features/job-actions/actions';
+import { initialJobStatusActionState } from '@/features/job-actions/action-state';
 
 export function JobStatusControls({
   profileId,

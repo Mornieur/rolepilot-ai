@@ -8,7 +8,6 @@ vi.mock('react', async (importOriginal) => ({
 }));
 vi.mock('@/features/ai-job-analysis/actions', () => ({
   analyzeJobAction: vi.fn(),
-  initialAiAnalysisActionState: { status: 'idle' },
 }));
 
 import { AiAnalysisCard } from './ai-analysis-card';

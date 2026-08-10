@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/companies/actions', () => ({
-  initialCompanyActionState: { status: 'idle' },
   createTargetCompanyAction: vi.fn(),
   updateTargetCompanyAction: vi.fn(),
   deleteTargetCompanyAction: vi.fn(),
@@ -39,17 +38,17 @@ const companies: TargetCompany[] = [
 describe('CompanyManager', () => {
   it('renders the company form and empty state', () => {
     render(<CompanyManager companies={[]} />);
-    expect(screen.getByLabelText('Company name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nome da empresa')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'No companies are configured. Add a company before automatic job collection can begin.',
+        'Nenhuma empresa está configurada. Adicione uma empresa para fazer prévias e salvar vagas manualmente.',
       ),
     ).toBeInTheDocument();
   });
   it('shows enabled and disabled status plus priority', () => {
     render(<CompanyManager companies={companies} />);
-    expect(screen.getByText('Monitoring enabled')).toBeInTheDocument();
-    expect(screen.getByText('Monitoring disabled')).toBeInTheDocument();
-    expect(screen.getByText('high priority')).toBeInTheDocument();
+    expect(screen.getByText('Monitoramento futuro marcado')).toBeInTheDocument();
+    expect(screen.getByText('Monitoramento futuro desmarcado')).toBeInTheDocument();
+    expect(screen.getByText('Prioridade high')).toBeInTheDocument();
   });
 });

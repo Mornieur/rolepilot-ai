@@ -5,13 +5,18 @@ import { listTargetCompanies } from '@/features/companies/server/target-companie
 import { getSupabaseServerClient } from '@/features/profiles/server/supabase';
 import { buildJobInsights } from '../aggregations';
 import type { InsightPeriod } from '../periods';
+import { evaluateJob } from '@/features/job-evaluation/evaluate';
 
 export class JobInsightsDataError extends Error {
   constructor() {
     super('Insights are unavailable right now. Please try again.');
   }
 }
-export async function loadJobInsights(profileId: string, period: InsightPeriod) {
+export async function loadJobInsights(
+  profileId: string,
+  period: InsightPeriod,
+  scope: 'all' | 'relevant' = 'all',
+) {
   const profile = await getCandidateProfileById(profileId);
   if (!profile) return null;
   try {
@@ -27,7 +32,7 @@ export async function loadJobInsights(profileId: string, period: InsightPeriod) 
     return buildJobInsights({
       profile,
       period,
-      jobs,
+      jobs: scope === 'relevant' ? jobs.filter((job) => evaluateJob(profile, job).eligible) : jobs,
       companies: new Map(companies.map((company) => [company.id, company.name])),
       statuses: (response.data ?? []).map((row) => ({
         profileId: row.profile_id,

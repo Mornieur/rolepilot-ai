@@ -13,13 +13,7 @@ import {
   TargetCompanyDataError,
   updateTargetCompany,
 } from '@/features/companies/server/target-companies';
-
-export type CompanyActionState = {
-  status: 'idle' | 'success' | 'error';
-  message?: string;
-  fieldErrors?: Record<string, string[] | undefined>;
-};
-export const initialCompanyActionState: CompanyActionState = { status: 'idle' };
+import type { CompanyActionState } from '@/features/companies/action-state';
 
 function validationState(error: {
   flatten: () => { fieldErrors: Record<string, string[] | undefined> };

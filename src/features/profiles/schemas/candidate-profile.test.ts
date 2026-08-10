@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { candidateProfileInputSchema } from './candidate-profile';
+import { candidateProfileInputSchema, parseCandidateProfileFormData } from './candidate-profile';
 
 const validProfile = {
   name: '  Product analyst  ',
@@ -33,5 +33,28 @@ describe('candidate profile validation', () => {
       acceptedWorkModels: ['flexible'],
     });
     expect(result.success).toBe(false);
+  });
+
+  it('accepts empty excluded skills and normalizes comma-separated values', () => {
+    const formData = new FormData();
+    Object.entries({
+      name: 'Maria',
+      desiredRoles: 'Engineer',
+      requiredSkills: 'React',
+      preferredSkills: 'TypeScript, TypeScript',
+      excludedSkills: '  ',
+      locations: 'Brazil',
+    }).forEach(([key, value]) => formData.set(key, value));
+    formData.append('acceptedSeniorities', 'senior');
+    formData.append('acceptedWorkModels', 'remote');
+
+    const emptyExcluded = parseCandidateProfileFormData(formData);
+    expect(emptyExcluded.success && emptyExcluded.data.excludedSkills).toEqual([]);
+    formData.set('excludedSkills', 'Travel, travel, Night shifts');
+    const populatedExcluded = parseCandidateProfileFormData(formData);
+    expect(populatedExcluded.success && populatedExcluded.data.excludedSkills).toEqual([
+      'Travel',
+      'Night shifts',
+    ]);
   });
 });
