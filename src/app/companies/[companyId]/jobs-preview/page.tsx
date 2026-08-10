@@ -4,6 +4,7 @@ import { Alert, Surface } from '@/components/feitoza-ui';
 import { PageContainer, PageContent } from '@/components/page-layout';
 import { GreenhousePreview } from '@/features/job-sources/greenhouse/components/greenhouse-preview';
 import { loadTargetCompanyById } from '@/features/companies/server/load-companies';
+import { requireAdmin, requirePageUser } from '@/features/auth/server/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export default async function JobsPreviewPage({
 }: {
   params: Promise<{ companyId: string }>;
 }) {
+  requireAdmin(await requirePageUser());
   const { companyId } = await params;
   const result = await loadTargetCompanyById(companyId);
   if (result.error !== null || result.company === null)

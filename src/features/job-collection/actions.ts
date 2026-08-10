@@ -2,10 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { runCollection } from '@/features/job-collection/server/run-collection';
-import { requirePersonalAccess } from '@/lib/personal-access-server';
+import { requireAdmin, requireCurrentUser } from '@/features/auth/server/auth';
 
 export async function runCollectionNowAction() {
-  await requirePersonalAccess();
+  requireAdmin(await requireCurrentUser());
   try {
     const result = await runCollection('manual');
     revalidatePath('/companies');

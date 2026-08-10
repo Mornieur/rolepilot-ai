@@ -2,6 +2,9 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({ loadPersistedJobs: vi.fn() }));
+vi.mock('@/features/auth/server/auth', () => ({
+  requirePageUser: vi.fn().mockResolvedValue({ id: 'user-1', role: 'user' }),
+}));
 
 vi.mock('@/features/jobs/server/load-jobs', () => ({
   loadPersistedJobs: dependencies.loadPersistedJobs,

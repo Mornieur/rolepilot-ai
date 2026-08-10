@@ -1,5 +1,6 @@
 export type CandidateProfileRow = {
   id: string;
+  user_id?: string | null;
   name: string;
   desired_roles: string[] | null;
   accepted_seniorities: string[] | null;
@@ -8,6 +9,13 @@ export type CandidateProfileRow = {
   excluded_skills: string[] | null;
   accepted_work_models: string[] | null;
   locations: string[] | null;
+  created_at: string;
+  updated_at: string;
+};
+export type AppUserRow = {
+  user_id: string;
+  display_name: string | null;
+  role: 'admin' | 'user';
   created_at: string;
   updated_at: string;
 };
@@ -116,6 +124,12 @@ export type JobNotificationEventRow = {
 export type Database = {
   public: {
     Tables: {
+      app_users: {
+        Row: AppUserRow;
+        Insert: Omit<AppUserRow, 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<AppUserRow, 'user_id' | 'created_at' | 'updated_at'>>;
+        Relationships: [];
+      };
       candidate_profiles: {
         Row: CandidateProfileRow;
         Insert: Omit<CandidateProfileRow, 'id' | 'created_at' | 'updated_at'> & { id?: string };

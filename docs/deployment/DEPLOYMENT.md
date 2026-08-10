@@ -15,6 +15,7 @@ and UI access never grants scheduler access.
    the Vercel dashboard; never commit or share them:
    - `NEXT_PUBLIC_APP_URL`
    - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `GEMINI_API_KEY`
    - `GEMINI_MODEL`
@@ -57,3 +58,7 @@ latency materially increase.
 Replace this temporary gate before any multi-user/public product release with Supabase Auth,
 per-user ownership, RLS, and authorization checks in the data-access layer. The service-role
 key must remain server-only in every environment.
+
+## Auth rollout transition
+
+Supabase Auth and RLS are implemented, but do not remove `PERSONAL_ACCESS_SECRET` in this deployment. Apply the new migration, create and explicitly map Maria and Flávia accounts, then deploy the auth-enabled application and validate login/isolation. Keep scheduler and notification bearer secrets unchanged. The full order and safe backfill procedure are in `docs/architecture/AUTHENTICATION_STRATEGY.md`.

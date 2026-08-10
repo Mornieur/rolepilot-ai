@@ -43,6 +43,7 @@ Set these values in `.env.local` from your Supabase project:
 ```env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 GEMINI_API_KEY=
 GEMINI_MODEL=
@@ -60,6 +61,7 @@ Apply the migrations in order through the Supabase SQL editor:
 6. `supabase/migrations/202608100001_collection_runs_and_job_lifecycle.sql`
 7. `supabase/migrations/202608100002_create_job_notification_events.sql`
 8. `supabase/migrations/202608100003_expand_notification_error_classifications.sql`
+9. `supabase/migrations/202608110001_auth_ownership_and_rls_foundation.sql`
 
 Then run `supabase/seed.sql` to insert generic example profiles and companies. It is non-destructive and does not reset data.
 
@@ -129,7 +131,7 @@ Job sources → collection → normalization → deduplication → deterministic
 
 ## Security limitation
 
-There is no user authentication or authorization. This version is intended only as a personal/local MVP and must not be presented as a secure multi-user deployment. A temporary server-side HTTP Basic personal access gate can protect a deployment while the scheduler is validated; it is not a replacement for Supabase Auth, ownership, or RLS. Database writes are validated and remain in server actions; the Supabase service-role key never reaches client components. See [deployment steps](docs/deployment/DEPLOYMENT.md).
+Supabase Auth now provides private email/password login, persisted account roles, profile ownership, and RLS. The temporary HTTP Basic personal gate remains in front of the UI during the staged production rollout; it is additional protection, not the authentication model. Scheduler and notification-worker routes retain their independent bearer authentication. See [authentication](docs/architecture/AUTHENTICATION_STRATEGY.md) and [deployment steps](docs/deployment/DEPLOYMENT.md).
 
 ## Current limitations
 

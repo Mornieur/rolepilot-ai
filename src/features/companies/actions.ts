@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requirePersonalAccess } from '@/lib/personal-access-server';
+import { AuthorizationError, requireAdmin, requireCurrentUser } from '@/features/auth/server/auth';
 
 import {
   parseTargetCompanyFormData,
@@ -26,6 +26,7 @@ function validationState(error: {
   };
 }
 function dataErrorState(error: unknown): CompanyActionState {
+  if (error instanceof AuthorizationError) return { status: 'error', message: error.message };
   return error instanceof TargetCompanyDataError
     ? { status: 'error', message: error.message }
     : { status: 'error', message: 'Unable to save the company. Please try again.' };
@@ -39,7 +40,7 @@ export async function createTargetCompanyAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
-  await requirePersonalAccess();
+  requireAdmin(await requireCurrentUser());
   const parsed = parseTargetCompanyFormData(formData);
   if (!parsed.success) return validationState(parsed.error);
   try {
@@ -55,7 +56,7 @@ export async function updateTargetCompanyAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
-  await requirePersonalAccess();
+  requireAdmin(await requireCurrentUser());
   const id = targetCompanyIdSchema.safeParse(formData.get('id'));
   const parsed = parseTargetCompanyFormData(formData);
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };
@@ -73,7 +74,7 @@ export async function deleteTargetCompanyAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
-  await requirePersonalAccess();
+  requireAdmin(await requireCurrentUser());
   const id = targetCompanyIdSchema.safeParse(formData.get('id'));
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };
   try {
@@ -89,7 +90,7 @@ export async function setTargetCompanyEnabledAction(
   _: CompanyActionState,
   formData: FormData,
 ): Promise<CompanyActionState> {
-  await requirePersonalAccess();
+  requireAdmin(await requireCurrentUser());
   const id = targetCompanyIdSchema.safeParse(formData.get('id'));
   const enabled = formData.get('enabled') === 'true';
   if (!id.success) return { status: 'error', message: 'The company could not be identified.' };

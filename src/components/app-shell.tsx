@@ -7,7 +7,15 @@ import { useEffect, useState } from 'react';
 type Theme = 'light' | 'dark';
 const key = 'rolepilot-theme';
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  currentUser,
+  logout,
+}: {
+  children: React.ReactNode;
+  currentUser?: { email: string | null; role: 'admin' | 'user'; displayName: string | null } | null;
+  logout?: React.ReactNode;
+}) {
   const [theme, setTheme] = useState<Theme>('light');
   useEffect(() => {
     const saved = localStorage.getItem(key) as Theme | null;
@@ -41,6 +49,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/jobs">Vagas</Link>
             <Link href="/jobs/evaluate">Avaliar vagas</Link>
             <Link href="/insights">Insights</Link>
+            {currentUser && (
+              <span className="text-slate-600 dark:text-slate-300">
+                {currentUser.displayName ?? currentUser.email}{' '}
+                {currentUser.role === 'admin' ? '(admin)' : ''}
+              </span>
+            )}
+            {currentUser && logout}
             <Button
               type="button"
               variant="secondary"

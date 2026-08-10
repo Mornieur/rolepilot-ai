@@ -1,11 +1,12 @@
 import { ProfileManager } from '@/features/profiles/components/profile-manager';
 import { loadCandidateProfiles } from '@/features/profiles/server/load-profiles';
 import Link from 'next/link';
+import { requirePageUser } from '@/features/auth/server/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilesPage() {
-  const result = await loadCandidateProfiles();
+  const result = await loadCandidateProfiles(await requirePageUser());
   if (result.error !== null)
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900 dark:bg-slate-950 dark:text-slate-100">

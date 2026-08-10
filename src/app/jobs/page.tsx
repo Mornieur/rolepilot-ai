@@ -2,10 +2,12 @@ import Link from 'next/link';
 import { Alert, Card, EmptyState, Surface } from '@/components/feitoza-ui';
 import { PageContainer, PageContent, PageHeader } from '@/components/page-layout';
 import { loadPersistedJobs } from '@/features/jobs/server/load-jobs';
+import { requirePageUser } from '@/features/auth/server/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default async function JobsPage() {
+  await requirePageUser();
   const result = await loadPersistedJobs();
   if (result.error || !result.jobs)
     return (

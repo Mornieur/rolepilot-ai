@@ -24,10 +24,23 @@ describe('personal MVP access proxy', () => {
     expect(response.headers.get('www-authenticate')).toContain('Basic');
   });
 
-  it('allows a browser request with the configured personal credential', () => {
+  it('redirects an authenticated-gate browser without a Supabase session to login', () => {
     const response = proxy(
       new NextRequest('https://rolepilot.example/jobs', {
         headers: { authorization: authorizationFor('test-secret') },
+      }),
+    );
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('https://rolepilot.example/login');
+  });
+
+  it('allows a browser request with both temporary gate and session cookie', () => {
+    const response = proxy(
+      new NextRequest('https://rolepilot.example/jobs', {
+        headers: {
+          authorization: authorizationFor('test-secret'),
+          cookie: 'rolepilot-access-token=session',
+        },
       }),
     );
     expect(response.status).toBe(200);

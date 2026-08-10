@@ -6,6 +6,18 @@ const dependencies = vi.hoisted(() => ({
   profile: vi.fn(),
   job: vi.fn(),
   save: vi.fn(),
+  ownership: vi.fn(),
+}));
+vi.mock('@/features/auth/server/auth', () => ({
+  requireCurrentUser: vi
+    .fn()
+    .mockResolvedValue({ id: '11111111-1111-4111-8111-111111111111', role: 'user' }),
+  AuthorizationError: class AuthorizationError extends Error {},
+}));
+vi.mock('@/features/profiles/server/supabase', () => ({
+  getSupabaseServerClient: () => ({
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: dependencies.ownership }) }) }),
+  }),
 }));
 vi.mock('@/features/job-actions/server/job-statuses', () => ({
   JobStatusDataError: class JobStatusDataError extends Error {},
@@ -32,6 +44,7 @@ describe('save job status action', () => {
     dependencies.profile.mockReset().mockResolvedValue({ id: profileId });
     dependencies.job.mockReset().mockResolvedValue({ id: jobId });
     dependencies.save.mockReset().mockResolvedValue({ status: 'saved', notes: null });
+    dependencies.ownership.mockReset().mockResolvedValue({ data: { user_id: profileId } });
   });
   it('validates IDs and status without accepting full job or profile payloads', async () => {
     await expect(
