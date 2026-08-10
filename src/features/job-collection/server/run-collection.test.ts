@@ -4,6 +4,7 @@ const deps = vi.hoisted(() => ({
   companies: vi.fn(),
   fetch: vi.fn(),
   persist: vi.fn(),
+  notifications: vi.fn(),
   start: vi.fn(),
   finish: vi.fn(),
 }));
@@ -13,6 +14,9 @@ vi.mock('@/features/companies/server/target-companies', () => ({
 }));
 vi.mock('@/features/job-sources/greenhouse/client', () => ({ fetchGreenhouseJobs: deps.fetch }));
 vi.mock('@/features/jobs/server/persisted-jobs', () => ({ persistCollectedJobs: deps.persist }));
+vi.mock('@/features/job-notifications/server/job-notification-events', () => ({
+  createNewEligibleJobNotificationEvents: deps.notifications,
+}));
 vi.mock('@/features/job-collection/server/collection-runs', () => ({
   startCollectionRun: deps.start,
   finishCollectionRun: deps.finish,
@@ -30,12 +34,21 @@ const greenhouse = {
   provider: 'greenhouse' as const,
   enabled: true,
 };
-const saved = { discovered: 3, created: 1, updated: 1, unchanged: 1, malformed: 0, skipped: 0 };
+const saved = {
+  discovered: 3,
+  created: 1,
+  updated: 1,
+  unchanged: 1,
+  malformed: 0,
+  skipped: 0,
+  jobs: [{ status: 'created', persistedJobId: 'job-new' }],
+};
 describe('runCollection', () => {
   beforeEach(() => {
     deps.companies.mockReset();
     deps.fetch.mockReset();
     deps.persist.mockReset();
+    deps.notifications.mockReset().mockResolvedValue({});
     deps.start.mockReset().mockResolvedValue({ id: 'run-1' });
     deps.finish.mockReset().mockResolvedValue(undefined);
     deps.fetch.mockResolvedValue({ jobs: [], skippedJobs: 0 });
@@ -53,12 +66,38 @@ describe('runCollection', () => {
       updated: 1,
       unchanged: 1,
     });
+    expect(deps.notifications).toHaveBeenCalledWith(['job-new']);
     expect(deps.finish).toHaveBeenCalledWith(
       'run-1',
       expect.objectContaining({
         companies: [expect.objectContaining({ companyName: 'iFood', status: 'success' })],
       }),
     );
+  });
+  it('keeps persisted collection successful when notification candidate generation fails', async () => {
+    deps.companies.mockResolvedValue([greenhouse]);
+    deps.notifications.mockRejectedValueOnce(new Error('notification data unavailable'));
+    await expect(runCollection('scheduled')).resolves.toMatchObject({
+      status: 'success',
+      created: 1,
+      notificationFailures: 1,
+    });
+    expect(deps.finish).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'success' }),
+    );
+  });
+  it('only sends newly created job IDs to notification candidate generation', async () => {
+    deps.companies.mockResolvedValue([greenhouse]);
+    deps.persist.mockResolvedValue({
+      ...saved,
+      jobs: [
+        { status: 'updated', persistedJobId: 'old' },
+        { status: 'unchanged', persistedJobId: 'same' },
+      ],
+    });
+    await runCollection('manual');
+    expect(deps.notifications).toHaveBeenCalledWith([]);
   });
   it('handles no enabled companies and safely skips Lever', async () => {
     deps.companies.mockResolvedValue([

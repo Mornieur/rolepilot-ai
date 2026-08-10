@@ -4,13 +4,16 @@ import { CompanyManager } from '@/features/companies/components/company-manager'
 import { loadTargetCompanies } from '@/features/companies/server/load-companies';
 import { getLatestCollectionRun } from '@/features/job-collection/server/collection-runs';
 import { CollectionControl } from '@/features/job-collection/components/collection-control';
+import { NotificationCandidatesSummary } from '@/features/job-notifications/components/notification-candidates-summary';
+import { listRecentJobNotificationEvents } from '@/features/job-notifications/server/job-notification-events';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CompaniesPage() {
-  const [result, lastRun] = await Promise.all([
+  const [result, lastRun, notificationEvents] = await Promise.all([
     loadTargetCompanies(),
     getLatestCollectionRun().catch(() => null),
+    listRecentJobNotificationEvents().catch(() => []),
   ]);
   if (result.error !== null)
     return (
@@ -32,6 +35,7 @@ export default async function CompaniesPage() {
       <CompanyManager companies={result.companies} />
       <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-8">
         <CollectionControl lastRun={lastRun} />
+        <NotificationCandidatesSummary events={notificationEvents} />
       </div>
     </>
   );
