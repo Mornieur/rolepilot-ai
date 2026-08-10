@@ -3,7 +3,6 @@ import { JobStatusDataError, saveStatus } from '@/features/job-actions/server/jo
 import { jobStatusInputSchema } from '@/features/job-actions/schema';
 import { getCandidateProfileById } from '@/features/profiles/server/candidate-profiles';
 import { getPersistedJobById } from '@/features/jobs/server/persisted-jobs';
-import { revalidatePath } from 'next/cache';
 import type { JobStatusActionState } from '@/features/job-actions/action-state';
 export async function saveJobStatusAction(
   _: JobStatusActionState,
@@ -29,8 +28,6 @@ export async function saveJobStatusAction(
       parsed.data.status,
       parsed.data.notes ?? null,
     );
-    revalidatePath('/');
-    revalidatePath('/jobs/evaluate');
     return { status: 'success', current: result.status, message: 'Decisão salva.' };
   } catch (error) {
     return {

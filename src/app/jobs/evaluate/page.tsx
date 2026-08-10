@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { Alert, Button, EmptyState, Select, Surface } from '@/components/feitoza-ui';
 import { PageContainer, PageContent, PageHeader } from '@/components/page-layout';
 import { EvaluationResults } from '@/features/job-evaluation/components/evaluation-results';
-import { evaluatePersistedJobsForProfile } from '@/features/job-evaluation/server';
+import { evaluatePersistedJobs } from '@/features/job-evaluation/server';
 import { loadCandidateProfiles } from '@/features/profiles/server/load-profiles';
-import { getStatus } from '@/features/job-actions/server/job-statuses';
-import type { JobUserStatus } from '@/types/domain';
+import { loadTargetCompanies } from '@/features/companies/server/load-companies';
+import { listStatusesForJobs } from '@/features/job-actions/server/job-statuses';
 import type { PersistedAiJobAnalysis } from '@/features/ai-job-analysis/types';
-import { getLatestAiAnalysis } from '@/features/ai-job-analysis/server/job-ai-analyses';
+import { listLatestAiAnalysesForJobs } from '@/features/ai-job-analysis/server/job-ai-analyses';
 import { getAiAnalysisInputFingerprint } from '@/features/ai-job-analysis/fingerprint';
+import type { JobUserStatus } from '@/types/domain';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,11 @@ export default async function EvaluateJobsPage({
 }: {
   searchParams: Promise<{ profileId?: string }>;
 }) {
-  const [{ profileId }, profiles] = await Promise.all([searchParams, loadCandidateProfiles()]);
+  const [{ profileId }, profiles, companies] = await Promise.all([
+    searchParams,
+    loadCandidateProfiles(),
+    loadTargetCompanies(),
+  ]);
   if (profiles.error || !profiles.profiles)
     return (
       <PageContainer>
@@ -28,55 +33,59 @@ export default async function EvaluateJobsPage({
         </div>
       </PageContainer>
     );
+
   let results = null;
   let statuses: Record<string, JobUserStatus> = {};
   let latestAnalyses: Record<string, PersistedAiJobAnalysis & { stale: boolean }> = {};
   let error: string | null = null;
+  const profile = profiles.profiles.find((candidate) => candidate.id === profileId);
   if (profileId)
     try {
-      results = await evaluatePersistedJobsForProfile(profileId);
-      statuses = Object.fromEntries(
-        await Promise.all(
-          results.map(async (result) => [
-            result.job.id,
-            (await getStatus(result.profileId, result.job.id)).status,
-          ]),
+      if (!profile) throw new Error('Selected profile is unavailable.');
+      results = await evaluatePersistedJobs(profile);
+      const eligibleResults = results.filter((result) => result.eligible);
+      const [loadedStatuses, loadedAnalyses] = await Promise.all([
+        listStatusesForJobs(
+          profile.id,
+          results.map((result) => result.job.id),
         ),
+        listLatestAiAnalysesForJobs(
+          profile.id,
+          eligibleResults.map((result) => result.job.id),
+        ),
+      ]);
+      statuses = loadedStatuses;
+      latestAnalyses = Object.fromEntries(
+        eligibleResults.flatMap((result) => {
+          const latest = loadedAnalyses[result.job.id];
+          return latest
+            ? [
+                [
+                  result.job.id,
+                  {
+                    ...latest,
+                    stale:
+                      latest.inputFingerprint !==
+                      getAiAnalysisInputFingerprint(profile, result.job, result),
+                  },
+                ],
+              ]
+            : [];
+        }),
       );
-      const profile = profiles.profiles.find((candidate) => candidate.id === profileId);
-      if (profile)
-        latestAnalyses = Object.fromEntries(
-          (
-            await Promise.all(
-              results.map(async (result) => {
-                const latest = await getLatestAiAnalysis(profile.id, result.job.id);
-                return latest
-                  ? [
-                      result.job.id,
-                      {
-                        ...latest,
-                        stale:
-                          latest.inputFingerprint !==
-                          getAiAnalysisInputFingerprint(profile, result.job, result),
-                      },
-                    ]
-                  : null;
-              }),
-            )
-          ).filter(
-            (entry): entry is [string, PersistedAiJobAnalysis & { stale: boolean }] =>
-              entry !== null,
-          ),
-        );
     } catch {
       error = 'A avaliação não pôde ser concluída. Selecione um perfil atual e tente novamente.';
     }
+
+  const companyNames = Object.fromEntries(
+    (companies.companies ?? []).map((company) => [company.id, company.name]),
+  );
   return (
     <PageContainer>
       <PageContent>
         <PageHeader
-          title="Avaliação de vagas por regras"
-          description="A avaliação determinística é separada da análise opcional do Gemini e da sua decisão."
+          title="Avaliar vagas"
+          description="Priorize oportunidades compatíveis, registre sua decisão e use a análise manual do Gemini quando precisar."
           actions={
             <Link
               href="/jobs"
@@ -112,9 +121,9 @@ export default async function EvaluateJobsPage({
                   fullWidth
                 >
                   <option value="">Escolha um perfil</option>
-                  {profiles.profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.name}
+                  {profiles.profiles.map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.name}
                     </option>
                   ))}
                 </Select>
@@ -124,6 +133,13 @@ export default async function EvaluateJobsPage({
               </Button>
             </form>
           </Surface>
+        )}
+        {!profileId && profiles.profiles.length > 0 && (
+          <EmptyState
+            className="mt-6"
+            title="Escolha um perfil para começar"
+            description="A avaliação usa apenas regras determinísticas; ela não chama o Gemini nem envia candidaturas."
+          />
         )}
         {error && (
           <Alert className="mt-4" variant="danger" title="Avaliação indisponível" role="alert">
@@ -135,6 +151,7 @@ export default async function EvaluateJobsPage({
             results={results}
             statuses={statuses}
             latestAnalyses={latestAnalyses}
+            companyNames={companyNames}
           />
         )}
       </PageContent>

@@ -19,7 +19,9 @@ Não há ocorrência de `fdprocessedid` no código-fonte. Um aviso de hidrataç�
 
 Job actions are independent per profile and job pair. `new` means no explicit decision; persisted decisions are `saved`, `ignored`, `applied`, and `rejected`. Manual transitions are allowed. The dashboard has isolated per-profile counters. Notes exist in the database but not in the UI.
 
-Job decision controls submit explicit status values and immediately display the returned persisted state and concise feedback. The persisted choice also remains visibly selected after the request and on a server-loaded refresh. Insights preserves its selected collected/relevant scope through GET search parameters; the relevant scope is deterministic-only.
+Job decision controls submit explicit status values and immediately display the returned persisted state and concise feedback. The persisted choice also remains visibly selected after the request and on a server-loaded refresh. During a decision request, only the submitted control shows a Portuguese pending label. Insights preserves its selected collected/relevant scope through GET search parameters; the relevant scope is deterministic-only.
+
+The evaluation route prioritizes compact compatible opportunities, with score, warnings, decision state, and Gemini state visible before expandable deterministic details. Rejected jobs are a secondary, on-demand diagnostic list. Evaluation loads per-profile decisions in one query and latest Gemini analyses for compatible jobs in one query; it does not cache mutable decisions or analyses. Saving a decision no longer revalidates and re-renders the full evaluation route because the action response already carries the persisted decision state.
 
 ## Not implemented
 
@@ -35,8 +37,8 @@ Greenhouse é manual e somente leitura até o salvamento explícito. A prévia n
 
 ## Current milestone
 
-Deterministic descriptive job insights, filtered by profile and period, with visual consistency across product routes.
+Compact evaluation workflow and decision feedback after real-data manual smoke-test validation.
 
 ## Next approved milestone
 
-Review deterministic insights with real collected data before considering another reporting slice.
+No next milestone is approved in this document.

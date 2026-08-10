@@ -9,7 +9,7 @@ import { getSupabaseServerClient } from '@/features/profiles/server/supabase';
 import type { JobAiAnalysisRow } from '@/features/profiles/types/database';
 
 export class JobAiAnalysisDataError extends Error {
-  constructor(message = 'Saved AI analyses are unavailable right now. Please try again.') {
+  constructor(message = 'As análises salvas estão indisponíveis agora. Tente novamente.') {
     super(message);
   }
 }
@@ -22,7 +22,7 @@ function mapRow(row: JobAiAnalysisRow): PersistedAiJobAnalysis {
     row.recommendation !== analysis.data.recommendation ||
     row.confidence !== analysis.data.confidence
   )
-    throw new JobAiAnalysisDataError('A saved AI analysis is invalid.');
+    throw new JobAiAnalysisDataError('Uma análise salva é inválida.');
   return {
     id: row.id,
     profileId: row.profile_id,
@@ -62,7 +62,7 @@ export async function persistSuccessfulAiAnalysis(input: GeneratedAiJobAnalysis)
     })
     .select()
     .single();
-  if (error || !data) throw new JobAiAnalysisDataError('AI analysis could not be saved.');
+  if (error || !data) throw new JobAiAnalysisDataError('Não foi possível salvar a análise de IA.');
   return mapRow(data);
 }
 
@@ -77,4 +77,21 @@ export async function getLatestAiAnalysis(profileId: string, jobId: string) {
     .maybeSingle();
   if (error) throw new JobAiAnalysisDataError();
   return data ? mapRow(data) : null;
+}
+
+export async function listLatestAiAnalysesForJobs(profileId: string, jobIds: string[]) {
+  if (!jobIds.length) return {} as Record<string, PersistedAiJobAnalysis>;
+  const { data, error } = await getSupabaseServerClient()
+    .from('job_ai_analyses')
+    .select('*')
+    .eq('profile_id', profileId)
+    .in('job_id', jobIds)
+    .order('created_at', { ascending: false });
+  if (error) throw new JobAiAnalysisDataError();
+  const latest: Record<string, PersistedAiJobAnalysis> = {};
+  for (const item of data ?? []) {
+    const analysis = mapRow(item);
+    if (!latest[analysis.jobId]) latest[analysis.jobId] = analysis;
+  }
+  return latest;
 }

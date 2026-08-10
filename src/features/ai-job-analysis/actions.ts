@@ -17,7 +17,7 @@ export async function analyzeJobAction(
     jobId: formData.get('jobId'),
   });
   if (!parsed.success)
-    return { status: 'error', message: 'The profile or job could not be identified.' };
+    return { status: 'error', message: 'Não foi possível identificar o perfil ou a vaga.' };
   try {
     const generated = await generateEligibleJobAnalysis(parsed.data.profileId, parsed.data.jobId);
     return { status: 'success', analysis: await persistSuccessfulAiAnalysis(generated) };
@@ -27,7 +27,7 @@ export async function analyzeJobAction(
       message:
         error instanceof AiJobAnalysisError || error instanceof JobAiAnalysisDataError
           ? error.message
-          : 'AI analysis could not be completed.',
+          : 'Não foi possível concluir a análise de IA.',
     };
   }
 }

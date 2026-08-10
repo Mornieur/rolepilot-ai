@@ -46,10 +46,12 @@ describe('JobStatusControls', () => {
     expect(screen.getByRole('button', { name: 'Rejeitada' })).toBeEnabled();
   });
 
-  it('disables controls while pending and renders controlled success and error feedback', () => {
+  it('shows a Portuguese pending label and disables only the submitted control', () => {
     ui.pending = true;
     const { rerender } = render(<JobStatusControls profileId="profile" jobId="job" />);
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    expect(screen.getByRole('button', { name: 'Salvando…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Ignorar' })).toBeEnabled();
 
     ui.pending = false;
     ui.state = { status: 'success', current: 'saved', message: 'Decisão salva.' };
@@ -65,6 +67,17 @@ describe('JobStatusControls', () => {
     ui.state = { status: 'idle' };
     rerender(<JobStatusControls profileId="profile" jobId="job" />);
     expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+  });
+
+  it.each([
+    ['ignored', 'Ignorar', 'Ignorando…'],
+    ['applied', 'Candidatada', 'Marcando candidatura…'],
+    ['rejected', 'Rejeitada', 'Rejeitando…'],
+  ])('uses the matching pending label for %s', (_, label, pendingLabel) => {
+    ui.pending = true;
+    render(<JobStatusControls profileId="profile" jobId="job" />);
+    fireEvent.click(screen.getByRole('button', { name: label }));
+    expect(screen.getByRole('button', { name: pendingLabel })).toBeDisabled();
   });
 
   it('submits the selected status exactly once with the profile and job identifiers', () => {

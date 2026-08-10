@@ -3,7 +3,7 @@ import type { JobUserStatus } from '@/types/domain';
 import { jobStatusInputSchema } from '@/features/job-actions/schema';
 import { getSupabaseServerClient } from '@/features/profiles/server/supabase';
 export class JobStatusDataError extends Error {
-  constructor(message = 'Job status could not be saved.') {
+  constructor(message = 'Não foi possível salvar a decisão da vaga.') {
     super(message);
   }
 }
@@ -22,6 +22,21 @@ export async function getStatus(profileId: string, jobId: string) {
     ? { status: data.status as JobUserStatus, notes: data.notes }
     : { status: 'new' as const, notes: null };
 }
+
+export async function listStatusesForJobs(profileId: string, jobIds: string[]) {
+  if (!jobIds.length) return {} as Record<string, JobUserStatus>;
+  const { data, error } = await getSupabaseServerClient()
+    .from('job_user_statuses')
+    .select('job_id,status')
+    .eq('profile_id', profileId)
+    .in('job_id', jobIds);
+  if (error) throw new JobStatusDataError('Job statuses could not be loaded.');
+  return Object.fromEntries(
+    (data ?? [])
+      .filter((row) => isJobUserStatus(row.status))
+      .map((row) => [row.job_id, row.status]),
+  ) as Record<string, JobUserStatus>;
+}
 export async function saveStatus(
   profileId: string,
   jobId: string,
@@ -34,7 +49,7 @@ export async function saveStatus(
     status,
     notes: notes ?? undefined,
   });
-  if (!parsed.success) throw new JobStatusDataError('Job status is invalid.');
+  if (!parsed.success) throw new JobStatusDataError('A decisão da vaga é inválida.');
   const { data, error } = await getSupabaseServerClient()
     .from('job_user_statuses')
     .upsert(
