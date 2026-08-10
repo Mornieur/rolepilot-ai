@@ -12,17 +12,17 @@
 
 ## Implemented
 
-Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, manual structured Gemini analysis, job actions, deterministic insights, and the FeitozaUI visual rollout are implemented.
+Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, manual structured Gemini analysis with persisted history, job actions, deterministic insights, and the FeitozaUI visual rollout are implemented.
 
 Job actions are independent per profile and job pair. `new` means no explicit decision; persisted decisions are `saved`, `ignored`, `applied`, and `rejected`. Manual transitions are allowed. The dashboard has isolated per-profile counters. Notes exist in the database but not in the UI.
 
 ## Not implemented
 
-Automatic learning, scheduling, Lever collection, persisted analysis, notifications, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications.
+Automatic learning, scheduling, Lever collection, notifications, authentication/RLS, and analytics are not implemented. Job actions do not trigger AI, notifications, or automatic applications.
 
 ## Migrations
 
-`202607290001_create_candidate_profiles.sql`, `202607290002_create_target_companies.sql`, `202607290003_create_jobs.sql`, and `202608060001_create_job_user_statuses.sql`.
+`202607290001_create_candidate_profiles.sql`, `202607290002_create_target_companies.sql`, `202607290003_create_jobs.sql`, `202608060001_create_job_user_statuses.sql`, and `202608090001_create_job_ai_analyses.sql`.
 
 ## External integrations
 

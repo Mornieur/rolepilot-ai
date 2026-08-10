@@ -8,3 +8,21 @@ export type AiJobAnalysis = {
   interviewFocus: string[];
   deterministicAssessment: { score: number; eligible: true };
 };
+
+export type PersistedAiJobAnalysis = {
+  id: string;
+  profileId: string;
+  jobId: string;
+  provider: 'gemini';
+  model: string;
+  schemaVersion: string;
+  analysis: AiJobAnalysis;
+  latencyMs: number | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  inputFingerprint: string | null;
+  createdAt: string;
+};
+
+export type GeneratedAiJobAnalysis = Omit<PersistedAiJobAnalysis, 'id' | 'createdAt'>;

@@ -6,6 +6,9 @@ import { evaluatePersistedJobsForProfile } from '@/features/job-evaluation/serve
 import { loadCandidateProfiles } from '@/features/profiles/server/load-profiles';
 import { getStatus } from '@/features/job-actions/server/job-statuses';
 import type { JobUserStatus } from '@/types/domain';
+import type { PersistedAiJobAnalysis } from '@/features/ai-job-analysis/types';
+import { getLatestAiAnalysis } from '@/features/ai-job-analysis/server/job-ai-analyses';
+import { getAiAnalysisInputFingerprint } from '@/features/ai-job-analysis/fingerprint';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +30,7 @@ export default async function EvaluateJobsPage({
     );
   let results = null;
   let statuses: Record<string, JobUserStatus> = {};
+  let latestAnalyses: Record<string, PersistedAiJobAnalysis & { stale: boolean }> = {};
   let error: string | null = null;
   if (profileId)
     try {
@@ -39,6 +43,31 @@ export default async function EvaluateJobsPage({
           ]),
         ),
       );
+      const profile = profiles.profiles.find((candidate) => candidate.id === profileId);
+      if (profile)
+        latestAnalyses = Object.fromEntries(
+          (
+            await Promise.all(
+              results.map(async (result) => {
+                const latest = await getLatestAiAnalysis(profile.id, result.job.id);
+                return latest
+                  ? [
+                      result.job.id,
+                      {
+                        ...latest,
+                        stale:
+                          latest.inputFingerprint !==
+                          getAiAnalysisInputFingerprint(profile, result.job, result),
+                      },
+                    ]
+                  : null;
+              }),
+            )
+          ).filter(
+            (entry): entry is [string, PersistedAiJobAnalysis & { stale: boolean }] =>
+              entry !== null,
+          ),
+        );
     } catch {
       error =
         'Evaluation could not be completed. Select a current candidate profile and try again.';
@@ -102,7 +131,13 @@ export default async function EvaluateJobsPage({
             {error}
           </Alert>
         )}
-        {results && <EvaluationResults results={results} statuses={statuses} />}
+        {results && (
+          <EvaluationResults
+            results={results}
+            statuses={statuses}
+            latestAnalyses={latestAnalyses}
+          />
+        )}
       </PageContent>
     </PageContainer>
   );

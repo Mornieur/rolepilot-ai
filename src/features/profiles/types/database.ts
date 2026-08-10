@@ -51,6 +51,23 @@ export type JobUserStatusRow = {
   created_at: string;
   updated_at: string;
 };
+export type JobAiAnalysisRow = {
+  id: string;
+  profile_id: string;
+  job_id: string;
+  provider: string;
+  model: string;
+  schema_version: string;
+  result: unknown;
+  recommendation: string;
+  confidence: string;
+  latency_ms: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  input_fingerprint: string | null;
+  created_at: string;
+};
 
 export type Database = {
   public: {
@@ -77,6 +94,12 @@ export type Database = {
         Row: JobUserStatusRow;
         Insert: Omit<JobUserStatusRow, 'id' | 'created_at' | 'updated_at'> & { id?: string };
         Update: Partial<Omit<JobUserStatusRow, 'id' | 'created_at' | 'updated_at'>>;
+        Relationships: [];
+      };
+      job_ai_analyses: {
+        Row: JobAiAnalysisRow;
+        Insert: Omit<JobAiAnalysisRow, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: never;
         Relationships: [];
       };
     };

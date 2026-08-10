@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const AI_JOB_ANALYSIS_SCHEMA_VERSION = '1';
+
 const short = z.string().trim().min(1).max(280);
 export const aiJobAnalysisSchema = z.object({
   recommendation: z.enum(['strong_apply', 'apply', 'consider', 'skip']),

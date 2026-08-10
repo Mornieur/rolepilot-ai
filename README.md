@@ -4,6 +4,8 @@
 
 FeitozaUI is the official visual base, consumed only from the public `@feitoza-ui/core@0.3.0` entrypoint. Dashboard, profiles, companies, jobs, evaluation, and insights use its components where appropriate; Tailwind remains for responsive composition. The persisted light/dark shell is shared across these routes. Server-side data access remains on the server, while interactive selection, filters, and actions have narrow client boundaries. No business rule, score, eligibility, collection, Supabase behavior, or Gemini call count changed in the visual rollout. See [the adoption matrix](docs/architecture/FEITOZA_UI_ADOPTION_MATRIX.md).
 
+Successful manual Gemini analyses are stored as profile/job history with provider, model, schema version, timestamp, optional returned usage metadata, and a safe input fingerprint. Reanalysis is explicit; no raw prompt, provider response, error body, key, or cost estimate is stored.
+
 ## Documentação do projeto
 
 - [Visão do produto](docs/product/PRODUCT_VISION.md)
