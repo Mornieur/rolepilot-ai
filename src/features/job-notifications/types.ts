@@ -7,8 +7,13 @@ export type JobNotificationEventStatus = (typeof jobNotificationEventStatuses)[n
 export const jobNotificationPriorities = ['excellent', 'good', 'review'] as const;
 export type JobNotificationPriority = (typeof jobNotificationPriorities)[number];
 export const jobNotificationErrorClassifications = [
-  'delivery-unavailable',
-  'invalid-response',
+  'configuration',
+  'timeout',
+  'unauthorized',
+  'rate_limit',
+  'bad_request',
+  'telegram_unavailable',
+  'persistence_failure',
   'unknown',
 ] as const;
 export type JobNotificationErrorClassification =

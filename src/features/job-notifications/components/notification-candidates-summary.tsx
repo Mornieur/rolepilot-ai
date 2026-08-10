@@ -13,7 +13,8 @@ export function NotificationCandidatesSummary({ events }: { events: JobNotificat
         Candidatos de notificacao
       </h2>
       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        Eventos deterministas para vagas novas e elegiveis. Nenhum canal de entrega esta ativo.
+        Eventos deterministas para vagas novas e elegiveis. A entrega Telegram e processada por
+        worker protegido.
       </p>
       <dl className="mt-3 grid grid-cols-3 gap-3 text-sm">
         <div>
@@ -29,6 +30,11 @@ export function NotificationCandidatesSummary({ events }: { events: JobNotificat
           <dd className="text-lg font-semibold">{count('failed')}</dd>
         </div>
       </dl>
+      {events[0]?.errorClassification && (
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+          Última classificação de falha: {events[0].errorClassification}.
+        </p>
+      )}
     </Surface>
   );
 }

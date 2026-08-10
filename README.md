@@ -59,6 +59,7 @@ Apply the migrations in order through the Supabase SQL editor:
 5. `supabase/migrations/202608090001_create_job_ai_analyses.sql`
 6. `supabase/migrations/202608100001_collection_runs_and_job_lifecycle.sql`
 7. `supabase/migrations/202608100002_create_job_notification_events.sql`
+8. `supabase/migrations/202608100003_expand_notification_error_classifications.sql`
 
 Then run `supabase/seed.sql` to insert generic example profiles and companies. It is non-destructive and does not reset data.
 
@@ -158,3 +159,11 @@ The collection-lifecycle migration is applied and the GitHub scheduler was valid
 After successful persistence, only newly created active jobs are evaluated against every persisted candidate profile in this personal MVP. Eligible pairs create at most one `new_eligible_job` outbox event per profile and job. Priority comes only from deterministic score: `excellent` (80+), `good` (70-79), and `review` (below 70). Existing `saved`, `ignored`, `applied`, or `rejected` decisions are recorded as skipped discovery events. Recollections, observation-only refreshes, source updates, and old backlog jobs create no events. Gemini is never called automatically.
 
 The event table is a durable delivery boundary with pending/delivered/failed/skipped states and retry fields, but no Telegram, email, Alexa, or other delivery integration exists yet. Candidate-generation failures do not roll back collected jobs; they are safely classified in the collection-run result.
+
+## Telegram notification delivery
+
+The protected `POST /api/notifications/deliver` route sends a bounded batch of up to 20 pending `new_eligible_job` events sequentially. It uses only `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `NOTIFICATION_WORKER_SECRET` on the server. Each failure is classified safely; attempts 1–2 remain pending and attempt 3 becomes failed. The GitHub collection workflow calls delivery only after collection succeeds, so delivery failure cannot change collection history.
+
+Telegram accepts the message before RolePilot can persist `delivered`; if that database write fails, a future retry can duplicate a message. This is an at-least-once boundary, not an exact-once guarantee. Email, WhatsApp, Slack, Discord, Alexa, multi-channel routing, and user-configurable channels are not implemented.
+
+For a local manual check, configure the three Telegram worker variables only in `.env.local`, use a naturally pending local event, and make one authenticated `POST` to the delivery route. Do not create production fixture jobs. A non-production database may instead receive a temporary fixture through the existing local data workflow; remove it through normal local cleanup afterward.

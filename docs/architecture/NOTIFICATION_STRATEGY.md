@@ -12,4 +12,16 @@ The outbox stores only delivery-safe operational metadata: status, deterministic
 
 ## Not implemented
 
+## Telegram delivery implemented
+
+Only `pending` `new_eligible_job` events are considered. The server-only worker loads at most 20 oldest pending events with fewer than three attempts and processes them sequentially. It composes a concise Portuguese plain-text message from deterministic score/priority plus persisted company and job metadata; descriptions, profile fields, provider bodies, and Gemini content are excluded.
+
+The worker uses `TELEGRAM_BOT_TOKEN` and the fixed `TELEGRAM_CHAT_ID` exclusively from server environment configuration. `POST /api/notifications/deliver` requires its own constant-time checked `NOTIFICATION_WORKER_SECRET`; request bodies cannot choose destination or content. The GitHub collection workflow invokes it only after collection succeeds, so a delivery failure does not alter collection success.
+
+Each send attempt increments `attempt_count` and sets `last_attempt_at`. A successful send marks the same event `delivered`, records `delivered_at`, and sets channel `telegram`. Failures use only controlled classifications (`configuration`, `timeout`, `unauthorized`, `rate_limit`, `bad_request`, `telegram_unavailable`, `persistence_failure`, or `unknown`); attempts one and two remain pending, and attempt three becomes failed. No automatic in-call retry occurs.
+
+The persistence boundary is at-least-once, not exact-once: if Telegram accepts a message but the following database update fails, a retry can duplicate it. Delivered rows are excluded from future loads. Email, WhatsApp, Slack, Discord, Alexa, automatic Gemini enrichment, multi-channel routing, user configuration, Auth, and RLS are not implemented.
+
+The scheduled workflow uses a `deliver-notifications` job with `needs: collect`, so it cannot begin before that workflow's collection job completes successfully. It is still possible for an independently invoked worker to overlap; conditional event updates prevent a stale write from marking a newer attempt as delivered, but the provider/persistence gap remains at-least-once.
+
 There is no in-app, Telegram, email, Alexa, WhatsApp, Slack, Discord, push, or other delivery worker yet. Pending events are not sent. Update notifications, automatic Gemini enrichment, and multi-user/RLS ownership are future milestones.

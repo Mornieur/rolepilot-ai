@@ -21,3 +21,18 @@ jobs:
           curl --fail --silent --show-error --max-time 60 --request POST \
             --header "Authorization: Bearer $SCHEDULER_SECRET" \
             "$SCHEDULER_URL/api/collection/scheduled"
+
+  deliver-notifications:
+    needs: collect
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger pending Telegram delivery
+        env:
+          NOTIFICATION_WORKER_URL: ${{ secrets.ROLEPILOT_NOTIFICATION_WORKER_URL }}
+          NOTIFICATION_WORKER_SECRET: ${{ secrets.NOTIFICATION_WORKER_SECRET }}
+        run: |
+          test -n "$NOTIFICATION_WORKER_URL"
+          test -n "$NOTIFICATION_WORKER_SECRET"
+          curl --fail --silent --show-error --max-time 60 --request POST \
+            --header "Authorization: Bearer $NOTIFICATION_WORKER_SECRET" \
+            "$NOTIFICATION_WORKER_URL/api/notifications/deliver"

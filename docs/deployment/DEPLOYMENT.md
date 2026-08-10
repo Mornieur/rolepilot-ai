@@ -19,6 +19,9 @@ and UI access never grants scheduler access.
    - `GEMINI_API_KEY`
    - `GEMINI_MODEL`
    - `SCHEDULER_SECRET`
+   - `NOTIFICATION_WORKER_SECRET`
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID`
    - `PERSONAL_ACCESS_SECRET`
 3. Deploy manually through Vercel and obtain the production HTTPS URL.
 
@@ -34,11 +37,12 @@ and UI access never grants scheduler access.
 
 ## Connect GitHub Actions only after the boundary passes
 
-1. In GitHub repository secrets, configure the names `ROLEPILOT_SCHEDULER_URL` and
-   `SCHEDULER_SECRET`. `ROLEPILOT_SCHEDULER_URL` is the production HTTPS base URL, without
-   `/api/collection/scheduled`.
-2. Confirm the existing workflow continues to use `POST`, the bearer secret, and the
-   approximately-hourly `17 * * * *` schedule. Do not alter or activate the schedule here.
+1. In GitHub repository secrets, configure `ROLEPILOT_SCHEDULER_URL`, `SCHEDULER_SECRET`,
+   `ROLEPILOT_NOTIFICATION_WORKER_URL`, and `NOTIFICATION_WORKER_SECRET`. Both URLs are the
+   production HTTPS base URL, without their API suffixes.
+2. Confirm the workflow uses `POST`, the dedicated bearer secrets, and the approximately-hourly
+   `17 * * * *` schedule. Delivery is a second job that waits for successful collection; its
+   failure is independently visible and does not change collection history.
 3. Manually run the existing `workflow_dispatch` only after the above access checks pass.
 4. Verify the resulting `collection_runs` row has `trigger = scheduled`, then review the
    GitHub Actions run before relying on later cron invocations.

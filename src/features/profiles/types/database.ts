@@ -100,7 +100,16 @@ export type JobNotificationEventRow = {
   attempt_count: number;
   last_attempt_at: string | null;
   delivered_at: string | null;
-  error_classification: 'delivery-unavailable' | 'invalid-response' | 'unknown' | null;
+  error_classification:
+    | 'configuration'
+    | 'timeout'
+    | 'unauthorized'
+    | 'rate_limit'
+    | 'bad_request'
+    | 'telegram_unavailable'
+    | 'persistence_failure'
+    | 'unknown'
+    | null;
   created_at: string;
 };
 

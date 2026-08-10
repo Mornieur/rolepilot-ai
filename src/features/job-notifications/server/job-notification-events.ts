@@ -96,12 +96,16 @@ export async function createNewEligibleJobNotificationEvents(
   return result;
 }
 
-export async function listPendingJobNotificationEvents(): Promise<JobNotificationEvent[]> {
+export async function listPendingJobNotificationEvents(
+  limit = 20,
+): Promise<JobNotificationEvent[]> {
   const { data, error } = await getSupabaseServerClient()
     .from('job_notification_events')
     .select('*')
     .eq('status', 'pending')
-    .order('created_at', { ascending: true });
+    .lt('attempt_count', 3)
+    .order('created_at', { ascending: true })
+    .limit(limit);
   if (error) throw new JobNotificationEventDataError();
   return (data ?? []).map(mapEvent);
 }
@@ -116,29 +120,46 @@ export async function listRecentJobNotificationEvents(limit = 5): Promise<JobNot
   return (data ?? []).map(mapEvent);
 }
 
-export async function markJobNotificationEventDelivered(id: string): Promise<void> {
-  const { error } = await getSupabaseServerClient()
+export async function markJobNotificationEventDelivered(
+  event: Pick<JobNotificationEvent, 'id' | 'attemptCount'>,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { data, error } = await getSupabaseServerClient()
     .from('job_notification_events')
     .update({
       status: 'delivered',
-      delivered_at: new Date().toISOString(),
-      last_attempt_at: new Date().toISOString(),
+      channel: 'telegram',
+      attempt_count: event.attemptCount + 1,
+      delivered_at: now,
+      last_attempt_at: now,
+      error_classification: null,
     })
-    .eq('id', id);
-  if (error) throw new JobNotificationEventDataError();
+    .eq('id', event.id)
+    .eq('status', 'pending')
+    .eq('attempt_count', event.attemptCount)
+    .select('id')
+    .maybeSingle();
+  if (error || !data) throw new JobNotificationEventDataError();
 }
 
-export async function markJobNotificationEventFailed(
-  id: string,
+export async function recordJobNotificationEventFailure(
+  event: Pick<JobNotificationEvent, 'id' | 'attemptCount'>,
   errorClassification: JobNotificationErrorClassification,
 ): Promise<void> {
-  const { error } = await getSupabaseServerClient()
+  const attemptCount = event.attemptCount + 1;
+  const { data, error } = await getSupabaseServerClient()
     .from('job_notification_events')
     .update({
-      status: 'failed',
+      status: attemptCount >= 3 ? 'failed' : 'pending',
+      channel: 'telegram',
+      attempt_count: attemptCount,
       last_attempt_at: new Date().toISOString(),
       error_classification: errorClassification,
     })
-    .eq('id', id);
-  if (error) throw new JobNotificationEventDataError();
+    .eq('id', event.id)
+    .eq('status', 'pending')
+    .eq('attempt_count', event.attemptCount)
+    .select('id')
+    .maybeSingle();
+  if (error || !data) throw new JobNotificationEventDataError();
 }
