@@ -15,14 +15,14 @@ export async function saveJobStatusAction(
     status: formData.get('status'),
     notes: formData.get('notes') || undefined,
   });
-  if (!parsed.success) return { status: 'error', message: 'Job status is invalid.' };
+  if (!parsed.success) return { status: 'error', message: 'A decisão da vaga é inválida.' };
   try {
     const [profile, job] = await Promise.all([
       getCandidateProfileById(parsed.data.profileId),
       getPersistedJobById(parsed.data.jobId),
     ]);
     if (!profile || !job)
-      return { status: 'error', message: 'The profile or job could not be found.' };
+      return { status: 'error', message: 'O perfil ou a vaga não foi encontrado.' };
     const result = await saveStatus(
       parsed.data.profileId,
       parsed.data.jobId,
@@ -31,12 +31,12 @@ export async function saveJobStatusAction(
     );
     revalidatePath('/');
     revalidatePath('/jobs/evaluate');
-    return { status: 'success', current: result.status, message: 'Job status updated.' };
+    return { status: 'success', current: result.status, message: 'Decisão salva.' };
   } catch (error) {
     return {
       status: 'error',
       message:
-        error instanceof JobStatusDataError ? error.message : 'Job status could not be saved.',
+        error instanceof JobStatusDataError ? error.message : 'Não foi possível salvar a decisão.',
     };
   }
 }

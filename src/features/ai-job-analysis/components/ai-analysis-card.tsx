@@ -21,37 +21,39 @@ export function AiAnalysisCard({
   return (
     <Surface className="mt-4 p-4" aria-labelledby={`ai-${jobId}`}>
       <h3 id={`ai-${jobId}`} className="font-semibold">
-        Manual Gemini analysis
+        Análise manual com Gemini
       </h3>
-      <p className="mt-1 text-sm">Gemini-assisted analysis — review before deciding to apply.</p>
+      <p className="mt-1 text-sm">
+        Análise assistida por Gemini — revise antes de decidir candidatar-se.
+      </p>
       {displayed?.stale && (
         <p role="status" className="mt-3 text-sm text-amber-800 dark:text-amber-200">
-          This analysis is stale because the profile or job context changed after it was saved.
+          Esta análise está desatualizada porque o perfil ou a vaga mudou após o salvamento.
         </p>
       )}
       {displayed && (
         <div className="mt-3 text-sm">
-          <p role="status">Saved analysis: {displayed.stale ? 'stale' : 'current'}.</p>
+          <p role="status">Análise salva: {displayed.stale ? 'desatualizada' : 'atual'}.</p>
           <p className="mt-1 font-medium">
-            {displayed.analysis.recommendation} · {displayed.analysis.confidence} confidence
+            {displayed.analysis.recommendation} · confiança {displayed.analysis.confidence}
           </p>
           <p className="mt-1 break-words">{displayed.analysis.summary}</p>
           <p className="mt-2">
-            Deterministic score: {displayed.analysis.deterministicAssessment.score}/100
+            Pontuação determinística: {displayed.analysis.deterministicAssessment.score}/100
           </p>
           <details className="mt-3 text-xs text-slate-600 dark:text-slate-300">
-            <summary className="cursor-pointer font-medium">Analysis details</summary>
-            <p className="mt-1">Analyzed: {new Date(displayed.createdAt).toLocaleString()}</p>
+            <summary className="cursor-pointer font-medium">Detalhes da análise</summary>
+            <p className="mt-1">Analisada em: {new Date(displayed.createdAt).toLocaleString()}</p>
             <p>
-              Provider/model: {displayed.provider} / {displayed.model}
+              Provedor/modelo: {displayed.provider} / {displayed.model}
             </p>
           </details>
           <List
-            title="Strengths"
+            title="Pontos fortes"
             items={displayed.analysis.strengths.map((item) => `${item.title}: ${item.evidence}`)}
           />
           <List
-            title="Gaps"
+            title="Lacunas"
             items={displayed.analysis.gaps.map(
               (item) => `${item.title} (${item.severity}): ${item.explanation}`,
             )}
@@ -62,7 +64,7 @@ export function AiAnalysisCard({
         <input type="hidden" name="profileId" value={profileId} />
         <input type="hidden" name="jobId" value={jobId} />
         <Button type="submit" disabled={pending}>
-          {pending ? 'Analyzing…' : displayed ? 'Reanalyze with Gemini' : 'Analyze with Gemini'}
+          {pending ? 'Analisando…' : displayed ? 'Reanalisar com Gemini' : 'Analisar com Gemini'}
         </Button>
       </form>
       {state.status === 'error' && (
@@ -70,8 +72,8 @@ export function AiAnalysisCard({
           {state.message}
         </p>
       )}
-      {displayed && <List title="Risks" items={displayed.analysis.risks} />}
-      {displayed && <List title="Interview focus" items={displayed.analysis.interviewFocus} />}
+      {displayed && <List title="Riscos" items={displayed.analysis.risks} />}
+      {displayed && <List title="Foco para entrevista" items={displayed.analysis.interviewFocus} />}
     </Surface>
   );
 }

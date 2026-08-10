@@ -55,10 +55,10 @@ describe('InsightsPage', () => {
     );
     expect(screen.getByLabelText('Perfil')).toHaveValue(profile.id);
     expect(screen.getByLabelText('Período')).toHaveValue('30d');
-    expect(screen.getByText('Collected jobs').parentElement).toHaveTextContent('2');
-    expect(screen.getByText('Companies with most collected jobs')).toBeInTheDocument();
+    expect(screen.getByText('Vagas coletadas').parentElement).toHaveTextContent('2');
+    expect(screen.getByText(/Com base em 2 vagas coletadas\./)).toBeInTheDocument();
     expect(screen.getByText('Remote')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Very small sample');
+    expect(screen.getByRole('status')).toHaveTextContent('Amostra muito pequena');
   });
   it('uses selected query values and renders empty and controlled error states', async () => {
     dependencies.profiles.mockResolvedValue({ profiles: [profile, secondProfile], error: null });
@@ -83,5 +83,19 @@ describe('InsightsPage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Insights estão indisponíveis neste momento.',
     );
+  });
+  it('forwards the relevant scope and renders its selected subset explanation', async () => {
+    dependencies.profiles.mockResolvedValue({ profiles: [profile], error: null });
+    dependencies.insights.mockResolvedValue({ ...insight, sampleSize: 1 });
+    render(
+      await InsightsPage({
+        searchParams: Promise.resolve({ profileId: profile.id, period: 'all', scope: 'relevant' }),
+      }),
+    );
+    expect(dependencies.insights).toHaveBeenCalledWith(profile.id, 'all', 'relevant');
+    expect(screen.getByLabelText('Vagas analisadas')).toHaveValue('relevant');
+    expect(
+      screen.getByText(/Com base em 1 vagas compatíveis com este perfil\./),
+    ).toBeInTheDocument();
   });
 });
