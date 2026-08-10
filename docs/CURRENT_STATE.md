@@ -48,3 +48,10 @@ Compact evaluation workflow and decision feedback after real-data manual smoke-t
 ## Next approved milestone
 
 No next milestone is approved in this document.
+
+## Collection classification
+
+Os resultados e o histórico de coleta contam “atualizadas” apenas quando o conteúdo
+material normalizado da fonte muda. A renovação de `last_seen_at` e a manutenção ou
+reativação de ciclo de vida são persistidas, mas contam como “sem alteração” quando o
+conteúdo da vaga é o mesmo.
