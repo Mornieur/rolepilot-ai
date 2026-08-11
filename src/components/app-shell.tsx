@@ -47,6 +47,7 @@ export function AppShell({
             <Link href="/profiles">Perfis</Link>
             <Link href="/companies">Empresas</Link>
             <Link href="/jobs">Vagas</Link>
+            <Link href="/inbox">Caixa</Link>
             <Link href="/jobs/evaluate">Avaliar vagas</Link>
             <Link href="/insights">Insights</Link>
             {currentUser?.role === 'admin' && <Link href="/insights/matching">Diagnóstico</Link>}
