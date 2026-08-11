@@ -28,4 +28,16 @@ describe('AppShell', () => {
       'true',
     );
   });
+  it('shows the matching diagnostic link only to an admin', () => {
+    const user = render(
+      <AppShell currentUser={{ email: null, displayName: 'Flávia', role: 'user' }} />,
+    );
+    expect(screen.queryByRole('link', { name: 'Diagnóstico' })).not.toBeInTheDocument();
+    user.unmount();
+    render(<AppShell currentUser={{ email: null, displayName: 'Maria', role: 'admin' }} />);
+    expect(screen.getByRole('link', { name: 'Diagnóstico' })).toHaveAttribute(
+      'href',
+      '/insights/matching',
+    );
+  });
 });

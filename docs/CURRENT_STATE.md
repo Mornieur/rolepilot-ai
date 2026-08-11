@@ -63,3 +63,12 @@ Os resultados e o histórico de coleta contam “atualizadas” apenas quando o 
 material normalizado da fonte muda. A renovação de `last_seen_at` e a manutenção ou
 reativação de ciclo de vida são persistidas, mas contam como “sem alteração” quando o
 conteúdo da vaga é o mesmo.
+
+# Admin matching diagnostics
+
+`/insights/matching` is an admin-only, server-authorized, read-only diagnostic
+surface. It evaluates the current persisted sample with the existing
+deterministic matcher and profile-specific decisions, with bounded batch reads
+and a controlled failure state. It does not invoke Gemini, learn, write, or
+calibrate matching. A deployed authenticated admin smoke test remains needed
+to record fresh production measurements.
