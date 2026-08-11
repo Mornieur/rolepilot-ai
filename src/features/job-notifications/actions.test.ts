@@ -1,30 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const deps = vi.hoisted(() => {
+  class AuthenticationRequiredError extends Error {}
+  class AuthorizationError extends Error {}
   class TelegramDeliveryError extends Error {
     constructor(public classification: string) {
       super();
     }
   }
-  return { user: vi.fn(), send: vi.fn(), TelegramDeliveryError };
+  return {
+    user: vi.fn(),
+    send: vi.fn(),
+    AuthenticationRequiredError,
+    AuthorizationError,
+    TelegramDeliveryError,
+  };
 });
 vi.mock('server-only', () => ({}));
 vi.mock('@/features/auth/server/auth', () => ({
-  AuthorizationError: class AuthorizationError extends Error {},
+  AuthenticationRequiredError: deps.AuthenticationRequiredError,
+  AuthorizationError: deps.AuthorizationError,
   requireCurrentUser: deps.user,
   requireAdmin: (user: { role: string }) => {
-    if (user.role !== 'admin') throw new Error('denied');
+    if (user.role !== 'admin') throw new deps.AuthorizationError();
   },
 }));
 vi.mock('@/features/job-notifications/telegram', () => ({
   TelegramDeliveryError: deps.TelegramDeliveryError,
   sendTelegramMessage: deps.send,
 }));
-import {
-  initialTelegramTestActionState,
-  resetTelegramTestCooldownForTests,
-  sendTelegramTestAction,
-} from './actions';
+import { sendTelegramTestAction } from './actions';
+import { resetTelegramTestCooldownForTests } from './server/telegram-test-cooldown';
+import { initialTelegramTestActionState } from './telegram-test-action-state';
 
 describe('sendTelegramTestAction', () => {
   beforeEach(async () => {
@@ -43,13 +50,17 @@ describe('sendTelegramTestAction', () => {
     );
     expect(JSON.stringify(deps.send.mock.calls)).not.toContain('TELEGRAM_BOT_TOKEN');
   });
-  it('denies normal and anonymous users before calling Telegram', async () => {
+  it('returns controlled denials for normal and anonymous users before calling Telegram', async () => {
     deps.user.mockResolvedValue({ id: 'user-1', role: 'user' });
-    await expect(sendTelegramTestAction(initialTelegramTestActionState)).rejects.toThrow('denied');
-    deps.user.mockRejectedValue(new Error('authentication required'));
-    await expect(sendTelegramTestAction(initialTelegramTestActionState)).rejects.toThrow(
-      'authentication required',
-    );
+    await expect(sendTelegramTestAction(initialTelegramTestActionState)).resolves.toMatchObject({
+      status: 'error',
+      message: expect.stringContaining('permissão'),
+    });
+    deps.user.mockRejectedValue(new deps.AuthenticationRequiredError());
+    await expect(sendTelegramTestAction(initialTelegramTestActionState)).resolves.toMatchObject({
+      status: 'error',
+      message: expect.stringContaining('login'),
+    });
     expect(deps.send).not.toHaveBeenCalled();
   });
   it('returns a controlled missing-configuration failure without writing product data', async () => {

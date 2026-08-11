@@ -2,10 +2,8 @@
 
 import { useActionState } from 'react';
 import { Alert, Button } from '@/components/feitoza-ui';
-import {
-  initialTelegramTestActionState,
-  sendTelegramTestAction,
-} from '@/features/job-notifications/actions';
+import { sendTelegramTestAction } from '@/features/job-notifications/actions';
+import { initialTelegramTestActionState } from '@/features/job-notifications/telegram-test-action-state';
 
 export function TelegramTestControl() {
   const [state, action, pending] = useActionState(
