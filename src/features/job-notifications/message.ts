@@ -10,7 +10,7 @@ function rolePilotUrl(profileId: string) {
   const value = process.env.NEXT_PUBLIC_APP_URL;
   if (!value) return null;
   try {
-    const url = new URL('/jobs/evaluate', value);
+    const url = new URL('/inbox', value);
     if (!['http:', 'https:'].includes(url.protocol)) return null;
     url.searchParams.set('profileId', profileId);
     return url.toString();
