@@ -14,4 +14,18 @@ describe('scheduled collection workflow timeout contract', () => {
       '409) echo "Collection already in progress; skipping this scheduled invocation."',
     );
   });
+
+  it('uses the configured notification worker URL secret', () => {
+    const workflow = readFileSync(
+      resolve(process.cwd(), '.github/workflows/scheduled-job-collection.yml'),
+      'utf8',
+    );
+
+    expect(workflow).toContain('NOTIFICATION_WORKER_URL: ${{ secrets.NOTIFICATION_WORKER_URL }}');
+    expect(workflow).toContain(
+      'NOTIFICATION_WORKER_SECRET: ${{ secrets.NOTIFICATION_WORKER_SECRET }}',
+    );
+    expect(workflow).toContain('SCHEDULER_URL: ${{ secrets.ROLEPILOT_SCHEDULER_URL }}');
+    expect(workflow).toContain('SCHEDULER_SECRET: ${{ secrets.SCHEDULER_SECRET }}');
+  });
 });
