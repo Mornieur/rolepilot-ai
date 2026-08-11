@@ -1,92 +1,51 @@
 # Deterministic matching evaluation — 2026-08
 
-## Scope and dataset status
+## Scope and production baseline
 
-This is a static matcher audit plus an attempted read-only live-data diagnostic for the Maria frontend profile. The diagnostic was intentionally server-side only, used no Gemini code path, and contained no write operation. The most recent attempt was at `2026-08-11T17:38:56-03:00`.
+This is the first successful production diagnostic for `Maria Fernanda - Front-end`. It is read-only, server-side, deterministic, and used no Gemini code path or database write.
 
-The existing server-only Supabase configuration was present. The batched read-only requests for candidate profiles, jobs, and companies reached Supabase but were rejected with `PGRST303: JWT issued at future`. This is a backend JWT-time validation failure, so this runtime cannot safely read the current sample until its clock/JWT validity is corrected. The temporary Vitest harness was removed immediately. No public route, script, fixture, migration, or database change remains.
+- 275 persisted jobs: 263 active and 12 inactive.
+- 6 compatible (2%) and 269 rejected.
+- Companies: iFood 0/100, VTEX 2/30, Wellhub 4/118, Wildlife Studios 0/21 (compatible/rejected).
+- Scores: 90–100: 1; 80–89: 3; 70–79: 2; 60–69: 1; 50–59: 2; below 50: 266.
+- Hard reasons (not mutually exclusive): title 268, required skills 265, work model 4.
+- Warnings: location mismatch 131, seniority unknown 128, work-model unknown 113, seniority mismatch 71, partial required skills 7.
 
-Consequently, the current production-like dataset was **not** read in this evaluation. Do not treat the historical 206-job snapshot in `MATCHING_REAL_SAMPLE_2026-08.md` as a current 260+ job measurement. The historical report records four eligible jobs, but it is not a substitute for a fresh sample.
+The profile evidence confirms React and TypeScript as required, remote and hybrid as accepted work models, and mid/senior as accepted seniorities. Its frontend intent also includes a generic software-engineering title path; that path remains deliberately adjacent rather than a general software-role pass.
 
-The unavailable fields below must be measured only by rerunning the removed server-side, read-only harness in an environment that has the existing service-role configuration: active jobs, eligible/rejected counts and rate, company splits, score/reason/warning distributions, work-model and seniority distributions, decision comparison, top 20 eligible jobs, and top 30 rejected jobs.
+## Matcher architecture
 
-## Profile and matcher semantics
+The matcher normalizes title, description, location, departments, and offices (case/accents/punctuation) and performs whole-term deterministic matching. Score is title +25, required coverage +35, preferred up to +15, excluded -40, and seniority/location/work-model ±10; it is clamped to 0–100. Eligibility is strictly `title && required && !excluded && compatible-work-model`. Seniority, location, score, and unknown values never silently decide eligibility. Gemini is not part of this path.
 
-The matcher evaluates searchable normalized text from title, description, location, departments, and offices. It lowercases text, removes accents and punctuation (while retaining `#` and `+`), and matches whole normalized terms; it has no aliases, embeddings, inference, or Gemini dependency.
+Required skills mean **B: minimum coverage**, not “every configured skill” and not parsing the job’s own requirements. Unique configured terms are counted across searchable text; 50% passes. With React and TypeScript, one exact token passes with a partial-coverage warning, while zero fails. This explains much of the 265 count for unrelated jobs and retains a literal-extraction limitation (no aliases or inferred experience). No threshold change is supported.
 
-| Signal                | Current behavior                                                                                                                                                                                                                              |        Score effect | Hard reject?                          | Warning?                                 | Known limitation                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------: | ------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Desired title         | A configured desired role must match the title. For frontend-targeting profiles, `Software Engineer`, Full Stack, Web Engineer, and UI Engineer are adjacent only with frontend/UI/web/React evidence and not with explicitly distant titles. |         +25 on pass | Yes                                   | No                                       | Literal phrase matching; uncommon title variants need explicit evidence or configuration.   |
-| Frontend adjacency    | Direct frontend title evidence passes. Generic engineering adjacency requires searchable frontend evidence.                                                                                                                                   |   Included in title | Yes, when no title pass               | No                                       | The evidence set is deliberately small: frontend, front end, React, UI, web.                |
-| Clearly distant title | Backend, data engineer, cyber/security, Android/iOS/mobile, product manager, sales, HR/recruiting titles prevent an adjacent-title pass.                                                                                                      |                   0 | Yes, if title has no other valid pass | No                                       | The list is finite and title-based; it is not a semantic taxonomy.                          |
-| Required skills       | At least 50% of unique configured required skills must be found in searchable text.                                                                                                                                                           |         +35 on pass | Yes                                   | Partial coverage is neutral when 50%–99% | Literal terms only; aliases and experience implied without the exact term are not detected. |
-| Preferred skills      | Each found preferred term adds five points, capped at 15.                                                                                                                                                                                     |            0 to +15 | No                                    | No                                       | Presence is not weighted by context or recency.                                             |
-| Excluded skills       | Any exact excluded term found in searchable text fails the rule.                                                                                                                                                                              |                 -40 | Yes                                   | No                                       | Whole-term matching avoids `Java` matching `JavaScript`, but cannot interpret context.      |
-| Seniority             | Detected from title only: junior/intern, mid/pleno, senior, staff/principal/lead/manager/head/director. A mismatch remains eligible.                                                                                                          |           +10 / -10 | No                                    | Mismatch is neutral                      | Title-only detection can miss description-only or unusual seniority labels.                 |
-| Location              | Matches configured locations only against location and offices. A mismatch remains eligible; unknown is neutral.                                                                                                                              |           +10 / -10 | No                                    | Mismatch or unknown is neutral           | It does not infer geography from the description.                                           |
-| Work model            | Detects explicit remote, hybrid, or on-site signals in searchable text, location, and offices. An explicit incompatible model fails. Unknown is neutral.                                                                                      |           +10 / -10 | Yes                                   | Unknown is neutral                       | Fixed expressions intentionally avoid treating “remote team” as a remote job.               |
-| Final eligibility     | `title && required && !excluded && compatible-work-model`; seniority, location, and total score never decide eligibility.                                                                                                                     | Score clamped 0–100 | See above                             | See above                                | A high score cannot override a mandatory rule.                                              |
-| Sorting               | Eligible first, then score descending, last-seen descending, title ascending, and id ascending.                                                                                                                                               |                 N/A | N/A                                   | N/A                                      | Freshness is only a tie-breaker.                                                            |
+## Findings
 
-## Historical evidence and current risk review
+The 2% rate is predominantly expected for a full-company-board collection: iFood and Wildlife Studios produced no compatible roles, while six results are concentrated in VTEX and Wellhub. The high title and required counts overlap because one rejected job contributes every failed hard rule; they do not identify 268 separate title-only failures. Most unrelated roles have neither a frontend title family nor React/TypeScript evidence.
 
-The base branch already contains the prior title-adjacency calibration (`34bdc74`). Its historical sample showed generic `Software Engineer` configuration giving a literal positive title signal to explicit backend and Android jobs. The present implementation blocks that generic-adjacent path unless frontend evidence exists and the title is not distant. This behavior is covered by the matching fixture dataset.
+Direct frontend title families are `Frontend`/`Front-end` and `UI Engineer`. Adjacent families are generic `Software Engineer`, Full Stack, Web Engineer, and Design System Engineer: they require frontend evidence outside the title. Backend, data, designer, sales, legal, finance, security, mobile, product, HR/recruiting, and similarly distant titles do not gain an adjacent pass.
 
-The historical snapshot also reported four Wellhub eligible jobs, scores of 85, 80, 75, and 70, two partial-required-skill warnings, and three seniority warnings. It reported no work-model hard rejections. Those facts are retained as context only; no current job-level classifications can be asserted without the fresh read-only dataset.
+`Senior Backend Engineer`, `Senior Software Engineer | Billing`, and `Senior Software Engineer, Cloud` remain correctly rejected: their scores reflect other signals, but no compatible frontend family/evidence. `Software Engineer Specialist - IA | Full Stack` scores zero because Full Stack is adjacent and the collected content matches neither frontend requirement evidence nor React/TypeScript; that is logically correct. `Associate Field Software Engineer` remains ambiguous and may only pass with actual frontend requirements. `Frontend Engineering Manager | Design System` is title-compatible, but manager/staff is a seniority mismatch; by policy it remains eligible, not an asserted target role.
 
-Static false-positive safeguards are present for backend, mobile/Android/iOS, data, security, product, sales, HR/recruiting, legal, finance, and operations-style fixture cases. Static false-negative coverage includes Software Engineer with frontend evidence, Full Stack with frontend evidence, UI Engineer, and partial skill coverage. The current fixture set does not yet cover explicit Frontend Platform or Developer Experience examples; adding them would require a real failure case or an approved policy decision, not speculation.
+The confirmed defect was `UI Designer`: the prior broad `ui` title signal could grant it +25 as a frontend title. The calibration distinguishes direct `UI Engineer` from distant `UI Designer`. It also makes Web and Design System Engineer explicit adjacent families requiring evidence outside the title. This is a bounded precision correction, not fuzzy matching or threshold relaxation.
 
-## User-decision signals and quality metrics
+Seniority is title-only: unknown is neutral; mismatch is -10 and a warning. Therefore 128 unknown and 71 mismatch are not hidden eliminations. Manager/staff jobs can rank highly where other signals are strong; supplied evidence does not establish them as false positives, so seniority policy is unchanged.
 
-`saved`, `ignored`, `applied`, and `rejected` are explicit per-profile labels; `new` is the absence of a persisted decision. They remain evaluation labels only—there is no automatic learning or profile adjustment.
+Location is checked only against location/offices: mismatch is -10 and warning, unknown is neutral. Thus the 131 mismatches cannot eliminate relevant opportunities. Work model scans explicit phrases in description plus location/offices. Multiple remote/hybrid/on-site results can come from source policy text or genuinely flexible roles; aggregate evidence cannot distinguish these Wellhub records. Unknown is neutral; only a detected set with no accepted model rejects. No scraping change is justified.
 
-No decision sample could be read locally, so the following descriptive metrics are not reported with invented values:
+The prior false-negative diagnostic was too broad: it flagged UI Designer and Sales Solution Engineer for incidental frontend text. It now requires a frontend/adjacent title family, frontend requirement evidence, and exactly one hard blocker. It remains a review queue, not a claim of an error. No confirmed production false negative was demonstrated by the supplied cases; UI Designer is a confirmed false title-positive signal but was already ineligible through required skills.
 
-- eligible rate;
-- manually interesting rate (`saved` or `applied` among reviewed eligible jobs);
-- false-positive candidates (ignored/rejected eligible jobs);
-- false-negative candidates (saved/applied rejected jobs);
-- title, required-skill, and work-model hard-rejection shares;
-- seniority, location, and partial-required-skill warning shares;
-- average score by explicit decision.
+## Calibration and regression coverage
 
-If a future read-only sample has enough decisions, it may additionally show `interesting / eligible-reviewed` and `interesting-rejected / all-interesting-reviewed` as small-sample diagnostics, never as statistically reliable ML metrics.
+- `UI Designer`: title now fails even when content mentions UI/React; status remains rejected.
+- `UI Engineer`: remains a clear direct positive.
+- Web Engineer: positive only with frontend requirements; otherwise rejected.
+- Design System Engineer: positive only with frontend requirements; otherwise rejected.
+- Diagnostics: Sales Solution Engineer and UI Designer no longer surface merely from keyword presence.
 
-## Insights review
+Fixtures cover clear positives, clear negatives, and adjacent boundaries for these changes. No production data was modified and no aggregate post-change count is claimed. Expected production impact: small precision improvement and a smaller, more credible diagnostic review queue; the known six compatible examples retain their semantics unless unreported source text differs from the diagnostic evidence.
 
-Insights already exposes the deterministic compatible subset, collected sample size, explicit decision counts, work-model and seniority distributions, and ranked companies. It does not calculate rejection reasons or matcher-warning distributions. No Insights UI change was made because there is no fresh evidence identifying a missing decision-making metric, and a broader dashboard would not improve the blocked diagnostic.
+## Explicit non-changes and retest
 
-## Calibration proposals and changes
-
-No new calibration is proposed or implemented. The only strongly evidenced calibration available in the repository—the frontend-adjacent generic engineering guard—was already merged into the base branch before this task began. Changing thresholds, aliases, seniority, location, work model, or score weights without the current sample would be speculative and would violate the diagnostic-first boundary.
-
-When a fresh read-only sample is available, each proposed calibration must name the affected jobs, current reason(s), expected precision/recall effect, risk, and regression tests. Company-specific exceptions are not acceptable.
-
-## Explicit non-changes
-
-- No Gemini calls, prompt processing, embeddings, vector search, probabilistic scoring, learning, or automatic decisions.
-- No Supabase write, migration, production mutation, public diagnostic endpoint, or retained diagnostic harness.
-- No matcher, fixture, Insights, or factual-product-document behavior change.
-
-## Admin matching diagnostics surface
-
-The application now has an admin-only, server-authorized diagnostic route at
-`/insights/matching`. It uses the candidate profile chosen from the admin's
-authorized profile list, performs at most three bounded batch reads (persisted jobs,
-target companies, and that profile's decisions), and evaluates the current
-sample in memory with the existing `evaluateJob` function. It makes no Gemini
-call and performs no write.
-
-The surface renders descriptive current-sample totals, active lifecycle split,
-eligibility and company splits, score buckets, hard-rejection and warning
-distributions, detected work model and seniority, bounded compatible and
-rejected lists, suspicious text-pattern candidates, and decision comparisons.
-A rejected job can appear under more than one hard-rejection reason; this is
-stated in the UI and is intentional rather than a mutually-exclusive count.
-
-The loader has a 12-second bounded failure path and returns a controlled
-Portuguese error without provider details. Production numbers are still not
-recorded in this document: they require an authenticated admin smoke test in
-the deployed runtime. The route is an operational measurement surface, not a
-calibration or learning mechanism; no matcher calibration is justified until
-that current sample is reviewed.
+- No Gemini runtime calls, embeddings, learning, fuzzy matching, score-weight/threshold changes, source-collection changes, Auth/RLS changes, migration, deployment, or database write.
+- Retest production by loading `/insights/matching` as an authenticated admin, selecting Maria’s profile, recording the exact profile fields and the new aggregates, and manually opening each changed-title candidate plus all six eligible records. Compare title reasons and false-negative queue before accepting any further calibration.

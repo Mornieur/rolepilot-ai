@@ -23,8 +23,10 @@ const labels: Record<string, string> = {
 
 const suspiciousPositive =
   /\b(backend|mobile|android|ios|data|security|cyber|product|sales|human resources|recruit|legal|finance|operations)\b/i;
-const suspiciousNegative =
-  /\b(frontend|front end|react|ui engineer|web engineer|full stack|fullstack|design system|frontend platform|developer experience)\b/i;
+const titleFamilyCandidate =
+  /\b(frontend|front end|ui engineer|web engineer|full stack|fullstack|design system engineer|software engineer)\b/i;
+const frontendRequirementCandidate =
+  /\b(frontend|front end|react|typescript|ui engineer|web engineer)\b/i;
 
 function counted(values: string[], denominator?: number) {
   const map = new Map<string, number>();
@@ -149,7 +151,12 @@ export function buildMatchingDiagnostics({
     topEligible: eligible.slice(0, 20),
     borderlineRejected: rejected.slice(0, 30),
     falsePositives: eligible.filter((job) => suspiciousPositive.test(searchable(job.job))),
-    falseNegatives: rejected.filter((job) => suspiciousNegative.test(searchable(job.job))),
+    falseNegatives: rejected.filter(
+      (job) =>
+        titleFamilyCandidate.test(job.job.title) &&
+        frontendRequirementCandidate.test(searchable(job.job)) &&
+        job.exactlyOneHardRule,
+    ),
     decisions,
     decisionComparison: explicitStatuses.map((decision) => {
       const subset = diagnostics.filter((job) => job.decision === decision);

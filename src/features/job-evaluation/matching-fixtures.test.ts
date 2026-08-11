@@ -36,12 +36,34 @@ const base = (title: string, descriptionText = 'React TypeScript remote') =>
 const cases = [
   ['ideal React TypeScript frontend', base('Senior Frontend Engineer'), true],
   ['frontend title without React', base('Frontend Developer'), true],
+  ['UI Engineer is a direct frontend title', base('UI Engineer', 'TypeScript remote'), true],
+  ['UI Designer is not a frontend engineering title', base('UI Designer'), false],
   [
     'software engineer frontend-heavy',
     base('Software Engineer', 'React TypeScript frontend web remote'),
     true,
   ],
   ['full stack frontend', base('Full Stack Engineer', 'React TypeScript frontend remote'), true],
+  [
+    'web engineer needs frontend requirements beyond its title',
+    base('Web Engineer', 'React TypeScript remote'),
+    true,
+  ],
+  [
+    'web engineer without frontend requirements is rejected',
+    base('Web Engineer', 'Node.js remote'),
+    false,
+  ],
+  [
+    'design system engineer is adjacent with frontend requirements',
+    base('Design System Engineer', 'React TypeScript frontend remote'),
+    true,
+  ],
+  [
+    'design system engineer without frontend requirements is rejected',
+    base('Design System Engineer', 'Node.js remote'),
+    false,
+  ],
   ['backend only', base('Backend Engineer', 'Java Spring remote'), false],
   [
     'backend software engineer remains distant when the profile also accepts generic engineering titles',

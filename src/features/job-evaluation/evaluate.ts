@@ -24,14 +24,15 @@ function terms(text: string, values: string[]) {
   return unique(values).filter((term) => includesTerm(text, term));
 }
 
-const frontendSignals = ['frontend', 'front end', 'react', 'ui', 'web'];
+const frontendSignals = ['frontend', 'front end', 'react', 'ui engineer', 'web engineer'];
 const adjacentEngineeringTitles = [
   'software engineer',
   'full stack',
   'fullstack',
   'web engineer',
-  'ui engineer',
+  'design system engineer',
 ];
+const directFrontendTitles = ['frontend', 'front end', 'ui engineer'];
 const clearlyDistantTitles = [
   'backend',
   'data engineer',
@@ -40,13 +41,18 @@ const clearlyDistantTitles = [
   'android',
   'ios',
   'mobile',
+  'designer',
   'product manager',
   'sales',
   'human resources',
   'recruit',
 ];
 
-function matchDesiredRole(title: string, searchable: string, desiredRoles: string[]) {
+function hasFrontendRequirementsEvidence(searchable: string) {
+  return frontendSignals.some((term) => includesTerm(searchable, term));
+}
+
+function matchDesiredRole(title: string, frontendEvidence: string, desiredRoles: string[]) {
   const literal = terms(title, desiredRoles);
   const profileTargetsFrontend = unique(desiredRoles).some((role) =>
     frontendSignals.some((signal) => role.includes(signal)),
@@ -55,9 +61,9 @@ function matchDesiredRole(title: string, searchable: string, desiredRoles: strin
   if (specificLiteral.length || !profileTargetsFrontend) return specificLiteral;
   const titleIsDistant = clearlyDistantTitles.some((term) => includesTerm(title, term));
   const titleIsAdjacent = adjacentEngineeringTitles.some((term) => includesTerm(title, term));
-  const hasFrontendEvidence = frontendSignals.some((term) => includesTerm(searchable, term));
+  const hasFrontendEvidence = hasFrontendRequirementsEvidence(frontendEvidence);
   return !titleIsDistant &&
-    (frontendSignals.some((term) => includesTerm(title, term)) ||
+    (directFrontendTitles.some((term) => includesTerm(title, term)) ||
       (titleIsAdjacent && hasFrontendEvidence))
     ? ['adjacent frontend role']
     : [];
@@ -106,13 +112,18 @@ export function evaluateJob(
       .filter(Boolean)
       .join(' '),
   );
+  const frontendEvidence = normalizeText(
+    [job.descriptionText, job.location, ...job.departments, ...job.offices]
+      .filter(Boolean)
+      .join(' '),
+  );
   const reasons: EvaluationReason[] = [];
   let score = 0;
 
   const required = terms(searchable, profile.requiredSkills);
   const preferred = terms(searchable, profile.preferredSkills);
   const excluded = terms(searchable, profile.excludedSkills);
-  const titleTerms = matchDesiredRole(title, searchable, profile.desiredRoles);
+  const titleTerms = matchDesiredRole(title, frontendEvidence, profile.desiredRoles);
   const detectedSeniorities = detectSeniorities(title);
   const detectedModels = detectModels(searchable, job.location, job.offices);
   const locationTerms = job.location

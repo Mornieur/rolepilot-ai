@@ -50,6 +50,7 @@ describe('matching diagnostics aggregations', () => {
         job('five', 'Frontend Platform Engineer', 'React TypeScript hybrid', {
           location: 'Brazil',
         }),
+        job('six', 'Sales Solution Engineer', 'React TypeScript remote'),
       ],
       companyNames: new Map([
         ['acme', 'Acme'],
@@ -60,15 +61,15 @@ describe('matching diagnostics aggregations', () => {
   it('summarizes jobs, hard-rejection reasons, warnings, and score buckets without changing matcher output', () => {
     const diagnostics = result();
     expect(diagnostics.jobs).toMatchObject({
-      total: 5,
-      active: 5,
+      total: 6,
+      active: 6,
       inactive: 0,
       eligible: 2,
-      rejected: 3,
+      rejected: 4,
     });
     expect(
       diagnostics.rejectionReasons.find((item) => item.label === 'Cargo incompatível')?.count,
-    ).toBe(1);
+    ).toBe(2);
     expect(
       diagnostics.rejectionReasons.find((item) => item.label === 'Modelo de trabalho incompatível')
         ?.count,
@@ -77,18 +78,19 @@ describe('matching diagnostics aggregations', () => {
       diagnostics.warnings.find((item) => item.label === 'Cobertura parcial de skills obrigatórias')
         ?.count,
     ).toBe(1);
-    expect(diagnostics.scoreBuckets.reduce((total, item) => total + item.count, 0)).toBe(5);
+    expect(diagnostics.scoreBuckets.reduce((total, item) => total + item.count, 0)).toBe(6);
   });
   it('keeps deterministic ordering bounded and exposes one-hard-rule and suspicious candidates', () => {
     const diagnostics = result();
     expect(diagnostics.topEligible.map((item) => item.job.id)).toEqual(['one', 'two']);
-    expect(diagnostics.borderlineRejected).toHaveLength(3);
+    expect(diagnostics.borderlineRejected).toHaveLength(4);
     expect(
       diagnostics.borderlineRejected
         .filter((item) => item.exactlyOneHardRule)
         .map((item) => item.job.id),
     ).toContain('three');
     expect(diagnostics.falseNegatives.map((item) => item.job.id)).toContain('five');
+    expect(diagnostics.falseNegatives.map((item) => item.job.id)).not.toContain('six');
   });
   it('compares profile-isolated explicit decisions and handles an empty dataset', () => {
     const diagnostics = result();
@@ -97,7 +99,7 @@ describe('matching diagnostics aggregations', () => {
       applied: 1,
       ignored: 1,
       rejected: 1,
-      new: 1,
+      new: 2,
     });
     expect(diagnostics.crossCheck).toMatchObject({
       'eligible-saved': 1,
