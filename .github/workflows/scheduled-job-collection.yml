@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Trigger pending Telegram delivery
         env:
-          NOTIFICATION_WORKER_URL: ${{ secrets.ROLEPILOT_NOTIFICATION_WORKER_URL }}
+          NOTIFICATION_WORKER_URL: ${{ secrets.NOTIFICATION_WORKER_URL }}
           NOTIFICATION_WORKER_SECRET: ${{ secrets.NOTIFICATION_WORKER_SECRET }}
         run: |
           test -n "$NOTIFICATION_WORKER_URL"

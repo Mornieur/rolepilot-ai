@@ -37,7 +37,7 @@ user access, and an interactive user session does not grant system-route access.
 ## Connect GitHub Actions only after the boundary passes
 
 1. In GitHub repository secrets, configure `ROLEPILOT_SCHEDULER_URL`, `SCHEDULER_SECRET`,
-   `ROLEPILOT_NOTIFICATION_WORKER_URL`, and `NOTIFICATION_WORKER_SECRET`. Both URLs are the
+   `NOTIFICATION_WORKER_URL`, and `NOTIFICATION_WORKER_SECRET`. Both URLs are the
    production HTTPS base URL, without their API suffixes.
 2. Confirm the workflow uses `POST`, the dedicated bearer secrets, and the approximately-hourly
    `17 * * * *` schedule. Delivery is a second job that waits for successful collection; its
