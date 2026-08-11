@@ -21,7 +21,10 @@ vi.mock('@/features/profiles/server/supabase', () => ({
   getSupabaseServerClient: () => ({ from: deps.from }),
 }));
 
-import { createNewEligibleJobNotificationEvents } from './job-notification-events';
+import {
+  claimJobNotificationEventDelivery,
+  createNewEligibleJobNotificationEvents,
+} from './job-notification-events';
 import { priorityForDeterministicScore } from '@/features/job-notifications/types';
 
 const job = { id: 'job-1', isActive: true, title: 'Frontend Engineer' };
@@ -88,5 +91,36 @@ describe('createNewEligibleJobNotificationEvents', () => {
     expect(priorityForDeterministicScore(80)).toBe('excellent');
     expect(priorityForDeterministicScore(70)).toBe('good');
     expect(priorityForDeterministicScore(69)).toBe('review');
+  });
+  it('claims a pending event atomically before provider delivery', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: 'event-1',
+        profile_id: 'profile-a',
+        job_id: 'job-1',
+        event_type: 'new_eligible_job',
+        status: 'pending',
+        priority: 'excellent',
+        deterministic_score: 80,
+        channel: 'telegram',
+        attempt_count: 1,
+        last_attempt_at: '2026-08-11T00:00:00.000Z',
+        delivered_at: null,
+        error_classification: null,
+        created_at: '2026-08-10T00:00:00.000Z',
+      },
+      error: null,
+    });
+    const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+    chain.select = vi.fn().mockReturnValue({ maybeSingle });
+    chain.is = vi.fn().mockReturnValue(chain);
+    chain.eq = vi.fn().mockReturnValue(chain);
+    const update = vi.fn().mockReturnValue(chain);
+    deps.from.mockReturnValue({ update });
+    await expect(
+      claimJobNotificationEventDelivery({ id: 'event-1', attemptCount: 0, lastAttemptAt: null }),
+    ).resolves.toMatchObject({ attemptCount: 1, channel: 'telegram' });
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ attempt_count: 1 }));
+    expect(chain.is).toHaveBeenCalledWith('last_attempt_at', null);
   });
 });

@@ -48,6 +48,14 @@ user access, and an interactive user session does not grant system-route access.
 
 ## Limits and follow-up
 
+## Notifications V1 smoke test
+
+1. Sign in as an admin and open `/insights/notifications`. A normal user must reach `/insights` and an anonymous visitor `/login` before outbox data loads.
+2. Confirm Telegram reports configured without showing the token or chat ID. Send the fixed test message once, verify it arrives, and verify an immediate second click is rate-limited.
+3. Do not create a job, collection, matching result, decision, or normal outbox event for this test.
+4. The first real notification is recognized by a normal scheduled collection creating a new eligible job, its profile-scoped `new_eligible_job` event, a matching Telegram message, and that same event becoming `delivered` with `delivered_at` recorded.
+5. For a delivery failure, inspect only its safe classification and attempt count. Attempts one and two stay pending after the 60-second lease; attempt three becomes failed.
+
 `maxDuration = 180` is explicitly configured on the scheduler route. Vercel's current Fluid
 Compute documentation permits up to 300 seconds on Hobby, so this remains bounded while leaving
 meaningful headroom above observed 50-55 second collections. The workflow's `curl` has a separate

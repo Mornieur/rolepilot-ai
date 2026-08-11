@@ -50,6 +50,9 @@ export function AppShell({
             <Link href="/jobs/evaluate">Avaliar vagas</Link>
             <Link href="/insights">Insights</Link>
             {currentUser?.role === 'admin' && <Link href="/insights/matching">Diagnóstico</Link>}
+            {currentUser?.role === 'admin' && (
+              <Link href="/insights/notifications">Notificações</Link>
+            )}
             {currentUser && (
               <span className="text-slate-600 dark:text-slate-300">
                 {currentUser.displayName ?? currentUser.email}{' '}

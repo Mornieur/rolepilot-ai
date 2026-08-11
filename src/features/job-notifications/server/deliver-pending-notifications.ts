@@ -5,6 +5,7 @@ import { getPersistedJobById } from '@/features/jobs/server/persisted-jobs';
 import { formatTelegramJobNotification } from '@/features/job-notifications/message';
 import { TelegramDeliveryError, sendTelegramMessage } from '@/features/job-notifications/telegram';
 import {
+  claimJobNotificationEventDelivery,
   listPendingJobNotificationEvents,
   markJobNotificationEventDelivered,
   recordJobNotificationEventFailure,
@@ -32,20 +33,25 @@ export async function deliverPendingNotifications(): Promise<NotificationDeliver
       result.skipped += 1;
       continue;
     }
+    const claimed = await claimJobNotificationEventDelivery(event);
+    if (!claimed) {
+      result.skipped += 1;
+      continue;
+    }
     result.attempted += 1;
     try {
       const company = await getTargetCompanyById(job.targetCompanyId).catch(() => null);
       await sendTelegramMessage({
         chatId: process.env.TELEGRAM_CHAT_ID ?? '',
-        text: formatTelegramJobNotification(event, job, company),
+        text: formatTelegramJobNotification(claimed, job, company),
       });
-      await markJobNotificationEventDelivered(event);
+      await markJobNotificationEventDelivered(claimed);
       result.delivered += 1;
     } catch (error) {
       const classification =
         error instanceof TelegramDeliveryError ? error.classification : 'persistence_failure';
       try {
-        await recordJobNotificationEventFailure(event, classification);
+        await recordJobNotificationEventFailure(claimed, classification);
       } catch {
         // The event remains pending when attempt persistence is unavailable.
       }

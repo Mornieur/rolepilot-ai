@@ -14,6 +14,14 @@ The outbox stores only delivery-safe operational metadata: status, deterministic
 
 ## Telegram delivery implemented
 
+## Production diagnostics and integration test
+
+`/insights/notifications` validates an interactive admin server-side before loading service-role diagnostics. It derives exact outbox counts, latest `created_at`, `last_attempt_at`, and `delivered_at`, and a bounded enriched event list from existing persisted data. Provider message IDs, provider payloads, durable latency, and a distributed audit of test messages are unavailable because the current model does not persist them.
+
+`Enviar mensagem de teste` is an authenticated-admin-only server action that invokes the existing Telegram adapter with the configured destination and a fixed message. It creates no outbox event or product data, returns controlled results only, and has a per-process/per-admin 60-second cooldown.
+
+Before the worker calls Telegram it atomically claims an event with the existing `attempt_count` and `last_attempt_at` fields. Pending loads exclude claims younger than 60 seconds, preventing concurrent workers from sending the same active lease. A crashed worker becomes retryable after the lease expires. Telegram acceptance followed by database persistence failure remains at-least-once and can duplicate the later retry.
+
 Only `pending` `new_eligible_job` events are considered. The server-only worker loads at most 20 oldest pending events with fewer than three attempts and processes them sequentially. It composes a concise Portuguese plain-text message from deterministic score/priority plus persisted company and job metadata; descriptions, profile fields, provider bodies, and Gemini content are excluded.
 
 The worker uses `TELEGRAM_BOT_TOKEN` and the fixed `TELEGRAM_CHAT_ID` exclusively from server environment configuration. `POST /api/notifications/deliver` requires its own constant-time checked `NOTIFICATION_WORKER_SECRET`; request bodies cannot choose destination or content. The GitHub collection workflow invokes it only after collection succeeds, so a delivery failure does not alter collection success.

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const deps = vi.hoisted(() => ({
   list: vi.fn(),
+  claim: vi.fn(),
   job: vi.fn(),
   company: vi.fn(),
   send: vi.fn(),
@@ -11,6 +12,7 @@ const deps = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}));
 vi.mock('@/features/job-notifications/server/job-notification-events', () => ({
   listPendingJobNotificationEvents: deps.list,
+  claimJobNotificationEventDelivery: deps.claim,
   markJobNotificationEventDelivered: deps.delivered,
   recordJobNotificationEventFailure: deps.failed,
 }));
@@ -51,6 +53,10 @@ describe('deliverPendingNotifications', () => {
   beforeEach(() => {
     deps.list.mockReset().mockResolvedValue([event]);
     deps.job.mockReset().mockResolvedValue(job);
+    deps.claim.mockReset().mockImplementation(async (candidate) => ({
+      ...candidate,
+      attemptCount: candidate.attemptCount + 1,
+    }));
     deps.company.mockReset().mockResolvedValue({ name: 'Acme' });
     deps.send.mockReset().mockResolvedValue(undefined);
     deps.delivered.mockReset().mockResolvedValue(undefined);
@@ -63,7 +69,7 @@ describe('deliverPendingNotifications', () => {
       failed: 0,
       skipped: 0,
     });
-    expect(deps.delivered).toHaveBeenCalledWith(event);
+    expect(deps.delivered).toHaveBeenCalledWith(expect.objectContaining({ attemptCount: 1 }));
   });
   it('isolates a failure and proceeds to the next event', async () => {
     deps.list.mockResolvedValue([event, { ...event, id: 'event-2', jobId: 'job-2' }]);
@@ -74,7 +80,10 @@ describe('deliverPendingNotifications', () => {
       delivered: 1,
       failed: 1,
     });
-    expect(deps.failed).toHaveBeenCalledWith(event, 'persistence_failure');
+    expect(deps.failed).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 1 }),
+      'persistence_failure',
+    );
   });
   it('does not call Telegram when there are no pending events', async () => {
     deps.list.mockResolvedValue([]);
@@ -95,15 +104,29 @@ describe('deliverPendingNotifications', () => {
     deps.job.mockResolvedValue({ ...job, id: 'job-2' });
     deps.send.mockRejectedValueOnce(new Error('down'));
     await expect(deliverPendingNotifications()).resolves.toMatchObject({ failed: 1, delivered: 1 });
-    expect(deps.failed).toHaveBeenCalledWith(finalAttempt, 'persistence_failure');
+    expect(deps.failed).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'event-final', attemptCount: 3 }),
+      'persistence_failure',
+    );
   });
   it('records persistence failure after a successful Telegram response', async () => {
     deps.delivered.mockRejectedValueOnce(new Error('database unavailable'));
     await expect(deliverPendingNotifications()).resolves.toMatchObject({ failed: 1, delivered: 0 });
-    expect(deps.failed).toHaveBeenCalledWith(event, 'persistence_failure');
+    expect(deps.failed).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 1 }),
+      'persistence_failure',
+    );
   });
   it('uses the conservative batch limit', async () => {
     await deliverPendingNotifications();
     expect(deps.list).toHaveBeenCalledWith(notificationDeliveryBatchLimit);
+  });
+  it('does not send when another worker has already claimed the event', async () => {
+    deps.claim.mockResolvedValue(null);
+    await expect(deliverPendingNotifications()).resolves.toMatchObject({
+      attempted: 0,
+      skipped: 1,
+    });
+    expect(deps.send).not.toHaveBeenCalled();
   });
 });

@@ -59,6 +59,14 @@ No next milestone is approved in this document.
 
 ## Collection classification
 
+## Notifications V1 — production validation and observability
+
+`/insights/notifications` is admin-only and server-authorized before its data loads. It shows only safe Telegram configuration presence, exact pending/delivered/failed counts, latest event/attempt/success timestamps, and bounded recent outbox events. It never exposes Telegram credentials or chat identifiers.
+
+The fixed Telegram integration test uses the existing server-only adapter and creates no job, matching result, decision, collection run, or outbox event. It has a per-admin one-minute cooldown. Normal `new_eligible_job` delivery remains separate.
+
+The worker atomically leases a pending row before Telegram delivery using the existing persisted attempt count and last-attempt timestamp. Concurrent workers cannot send the same active lease; a 60-second expired lease is retried. The provider-acceptance/persistence-failure gap remains intentionally at-least-once.
+
 Os resultados e o histórico de coleta contam “atualizadas” apenas quando o conteúdo
 material normalizado da fonte muda. A renovação de `last_seen_at` e a manutenção ou
 reativação de ciclo de vida são persistidas, mas contam como “sem alteração” quando o
