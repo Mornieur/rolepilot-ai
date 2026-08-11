@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canAccessProfile } from './policy';
+import { canAccessProfile, selectAccessibleProfile } from './policy';
 
 describe('ownership policy', () => {
   const maria = { id: '11111111-1111-4111-8111-111111111111', role: 'user' as const };
@@ -14,5 +14,13 @@ describe('ownership policy', () => {
     expect(canAccessProfile(flavia, maria.id)).toBe(false);
     expect(canAccessProfile(admin, maria.id)).toBe(true);
     expect(canAccessProfile(admin, flavia.id)).toBe(true);
+  });
+
+  it('selects only a profile from the caller-authorized collection', () => {
+    const profiles = [{ id: maria.id }, { id: flavia.id }];
+
+    expect(selectAccessibleProfile(profiles)).toEqual(profiles[0]);
+    expect(selectAccessibleProfile(profiles, maria.id)).toEqual(profiles[0]);
+    expect(selectAccessibleProfile(profiles, '44444444-4444-4444-8444-444444444444')).toBeNull();
   });
 });
