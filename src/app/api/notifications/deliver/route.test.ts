@@ -10,8 +10,18 @@ describe('notification delivery route', () => {
     process.env.NOTIFICATION_WORKER_SECRET = 'worker-secret';
     deliver.mockReset().mockResolvedValue({ attempted: 1, delivered: 1, failed: 0, skipped: 0 });
   });
-  it('requires the dedicated bearer secret and ignores the body', async () => {
+  it('requires the dedicated bearer secret without an interactive user session and ignores the body', async () => {
     expect((await POST(new Request('http://test', { method: 'POST' }))).status).toBe(401);
+    expect(
+      (
+        await POST(
+          new Request('http://test', {
+            method: 'POST',
+            headers: { authorization: 'Bearer wrong' },
+          }),
+        )
+      ).status,
+    ).toBe(401);
     const response = await POST(
       new Request('http://test', {
         method: 'POST',
