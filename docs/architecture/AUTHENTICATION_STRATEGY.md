@@ -8,7 +8,7 @@ RolePilot usa Supabase Auth com e-mail e senha. Não há cadastro público, OAut
 
 Em `/insights`, a página resolve primeiro a lista de perfis autorizados para a sessão e seleciona o `profileId` somente dessa lista antes de carregar decisões ou outros dados derivados. Assim, o cliente service-role usado pelos repositórios não pode transformar um `profileId` arbitrário da URL em acesso a dados privados; perfis ausentes e não autorizados seguem a mesma resposta controlada.
 
-## Rollout staged
+## Rollout completed
 
 1. Aplicar `202608110001_auth_ownership_and_rls_foundation.sql`; `candidate_profiles.user_id` começa anulável e nada é atribuído automaticamente.
 2. Criar manualmente as contas Auth de Maria e Flávia e obter UUIDs de forma segura.
@@ -16,4 +16,4 @@ Em `/insights`, a página resolve primeiro a lista de perfis autorizados para a 
 4. Verificar que nenhum perfil produtivo permanece sem dono, publicar a aplicação com `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` e testar login, isolamento e admin.
 5. Só em migração futura tornar `user_id not null`.
 
-O HTTP Basic temporário (`PERSONAL_ACCESS_SECRET`) continua na Fase 1 e convive com Auth. A Fase 2, removê-lo das páginas de usuário, exige validação em produção e decisão explícita. `/api/collection/scheduled` e `/api/notifications/deliver` ficam fora dele e requerem seus bearers independentes.
+As rotas interativas não usam HTTP Basic: uma requisição sem sessão é redirecionada para `/login`, e as páginas e ações confirmam a sessão e o papel no servidor. Ações manuais de coleta Greenhouse exigem `admin`. `/api/collection/scheduled` e `/api/notifications/deliver` permanecem fora do fluxo de usuário e exigem exclusivamente seus bearers independentes.

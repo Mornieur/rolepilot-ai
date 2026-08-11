@@ -131,7 +131,7 @@ Job sources → collection → normalization → deduplication → deterministic
 
 ## Security limitation
 
-Supabase Auth now provides private email/password login, persisted account roles, profile ownership, and RLS. The temporary HTTP Basic personal gate remains in front of the UI during the staged production rollout; it is additional protection, not the authentication model. Scheduler and notification-worker routes retain their independent bearer authentication. See [authentication](docs/architecture/AUTHENTICATION_STRATEGY.md) and [deployment steps](docs/deployment/DEPLOYMENT.md).
+Supabase Auth provides the interactive-user boundary: private email/password login, persisted account roles, profile ownership, and RLS. Unauthenticated interactive requests redirect to `/login`; the temporary HTTP Basic gate is removed. Scheduler and notification-worker routes retain their independent bearer authentication. See [authentication](docs/architecture/AUTHENTICATION_STRATEGY.md) and [deployment steps](docs/deployment/DEPLOYMENT.md).
 
 ## Current limitations
 
@@ -141,12 +141,12 @@ Supabase Auth now provides private email/password login, persisted account roles
 - Deterministic evaluation is available; manual Gemini analysis is persisted after successful validation.
 - Scheduled Greenhouse collection is active and production validation confirmed both `workflow_dispatch` and a scheduled run.
 - A durable notification outbox creates deterministic candidates for newly persisted eligible jobs; no delivery channel is active.
-- There is no authentication, user model, or multi-tenancy.
+- Supabase Auth, persisted account roles, profile ownership, and RLS are implemented; public signup, OAuth, and broader multi-tenancy are not.
 
 ## Short roadmap
 
 1. Add an approved delivery worker/channel for pending notification events.
-2. Add authentication/RLS before treating profile ownership as multi-user.
+2. Add an approved second source adapter and additional product workflows.
 
 ## Scheduled Greenhouse collection
 

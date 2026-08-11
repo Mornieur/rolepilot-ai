@@ -1,11 +1,9 @@
 # Public deployment for scheduled collection
 
-This is a temporary, personal-MVP deployment boundary. It is not user authentication,
-authorization, Supabase Auth, RLS, or a secure multi-user SaaS architecture.
-
-The deployed UI is protected with HTTP Basic authentication by `PERSONAL_ACCESS_SECRET`.
-The scheduler has a separate `SCHEDULER_SECRET`; scheduler access never grants UI access,
-and UI access never grants scheduler access.
+Supabase Auth is the interactive-user authentication boundary. Unauthenticated interactive
+requests redirect to `/login`; ownership, persisted roles, and RLS authorize access after login.
+The scheduler and notification worker have separate bearer secrets; neither grants interactive
+user access, and an interactive user session does not grant system-route access.
 
 ## Before deployment
 
@@ -23,18 +21,18 @@ and UI access never grants scheduler access.
    - `NOTIFICATION_WORKER_SECRET`
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_CHAT_ID`
-   - `PERSONAL_ACCESS_SECRET`
 3. Deploy manually through Vercel and obtain the production HTTPS URL.
 
 ## Verify the deployment boundary
 
 1. Open `/`, `/profiles`, `/companies`, `/jobs`, `/jobs/evaluate`, and `/insights` in a
-   private browser window. Each must require the personal HTTP Basic credential before any
-   data is rendered.
-2. Confirm static assets still load after authentication.
+   private browser window. Each must redirect to `/login` without a Supabase session.
+2. Sign in with a mapped account and confirm its allowed routes load; verify a normal user
+   cannot access another profile and an admin can access the authorized admin scope.
 3. Send a `POST` to `/api/collection/scheduled` without an `Authorization: Bearer ...`
    header. It must return `401`.
-4. Do not send the correct scheduler secret for this initial public-access check.
+4. Send a `POST` to `/api/notifications/deliver` without its bearer header. It must return `401`.
+5. Do not send either correct system secret for these initial public-access checks.
 
 ## Connect GitHub Actions only after the boundary passes
 
@@ -55,10 +53,12 @@ observed 21–24 second collection while remaining within Vercel Hobby's 60-seco
 limit when Fluid compute is unavailable. Reassess the duration if enabled companies or provider
 latency materially increase.
 
-Replace this temporary gate before any multi-user/public product release with Supabase Auth,
-per-user ownership, RLS, and authorization checks in the data-access layer. The service-role
-key must remain server-only in every environment.
+The service-role key must remain server-only in every environment. Public signup, OAuth, and
+broader multi-tenant product rollout remain out of scope.
 
-## Auth rollout transition
+## Auth deployment boundary
 
-Supabase Auth and RLS are implemented, but do not remove `PERSONAL_ACCESS_SECRET` in this deployment. Apply the new migration, create and explicitly map Maria and Flávia accounts, then deploy the auth-enabled application and validate login/isolation. Keep scheduler and notification bearer secrets unchanged. The full order and safe backfill procedure are in `docs/architecture/AUTHENTICATION_STRATEGY.md`.
+Supabase Auth, ownership, and RLS have passed the production smoke test. Do not add a second
+interactive access secret. Keep scheduler and notification bearer secrets unchanged. The
+ownership model and the explicit future `user_id not null` decision are documented in
+`docs/architecture/AUTHENTICATION_STRATEGY.md`.

@@ -25,7 +25,7 @@ The evaluation route prioritizes compact compatible opportunities, with score, w
 
 ## Not implemented
 
-Automatic learning, Lever collection, notification delivery channels, and analytics are not implemented. Supabase Auth, ownership, RLS, and server authorization are implemented in code but require the documented staged production rollout and explicit profile backfill. Job actions do not trigger AI, notifications, or automatic applications. The temporary server-side personal access gate remains enabled during this transition.
+Automatic learning, Lever collection, and analytics are not implemented. Supabase Auth, ownership, RLS, and server authorization are implemented and production smoke-tested. Interactive routes use Supabase Auth; unauthenticated requests redirect to `/login`, and the temporary server-side HTTP Basic gate has been removed. Job actions do not trigger AI, notifications, or automatic applications.
 
 ## Scheduled collection foundation
 

@@ -6,4 +6,4 @@ Adotar Supabase Auth por e-mail/senha sem signup público. Persistir papel em `a
 
 ## Consequências
 
-Não há organizações, convites ou OAuth. A migração exige criação e backfill manual e verificável das duas contas existentes. O login não substitui, nesta fase, o HTTP Basic temporário.
+Não há organizações, convites ou OAuth. A migração exige criação e backfill manual e verificável das duas contas existentes. Após a validação de produção, o login Supabase substitui o HTTP Basic temporário como limite de acesso interativo.

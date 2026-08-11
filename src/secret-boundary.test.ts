@@ -6,7 +6,7 @@ describe('browser secret boundary', () => {
   it('does not use server credentials through NEXT_PUBLIC_ environment variables', () => {
     const source = readFileSync(resolve(process.cwd(), '.env.example'), 'utf8');
     expect(source).not.toMatch(
-      /NEXT_PUBLIC_(SUPABASE_SERVICE_ROLE_KEY|SCHEDULER_SECRET|NOTIFICATION_WORKER_SECRET|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|PERSONAL_ACCESS_SECRET|GEMINI_API_KEY)=/,
+      /NEXT_PUBLIC_(SUPABASE_SERVICE_ROLE_KEY|SCHEDULER_SECRET|NOTIFICATION_WORKER_SECRET|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|GEMINI_API_KEY)=/,
     );
   });
 

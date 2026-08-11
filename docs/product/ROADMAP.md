@@ -4,7 +4,7 @@
 2. **Implemented:** scheduled Greenhouse collection foundation: shared manual/scheduled orchestration, run history, partial-failure isolation, lifecycle closure/reactivation, protected scheduler route, GitHub Actions workflow and operational last-run status. Production scheduled execution and `workflow_dispatch` are validated.
 3. **Implemented:** durable deterministic notification-candidate outbox for newly created eligible jobs, scoped by profile/job/event and without delivery channels or automatic Gemini.
 4. **Implemented:** Telegram delivery for pending deterministic outbox events, with a protected worker and bounded retries; no automatic Gemini.
-5. **Implemented in code, pending staged production rollout:** Supabase Auth, private email/password login, persisted roles, profile ownership, RLS, and server authorization.
+5. **Implemented and production smoke-tested:** Supabase Auth is the interactive-user boundary with private email/password login, persisted roles, profile ownership, RLS, and server authorization; the temporary HTTP Basic gate is removed.
 6. **Planned:** a second adapter and additional product workflows.
 
 No dates are committed.
