@@ -20,6 +20,7 @@ describe('AppShell', () => {
       'href',
       '/jobs/evaluate',
     );
+    expect(screen.getByRole('link', { name: 'Caixa' })).toHaveAttribute('href', '/inbox');
     fireEvent.click(screen.getByRole('button', { name: 'Mudar para tema escuro' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem('rolepilot-theme')).toBe('dark');

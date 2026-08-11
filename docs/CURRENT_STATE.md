@@ -13,7 +13,7 @@
 
 Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, manual structured Gemini analysis with persisted history, job actions, deterministic insights, and the FeitozaUI visual rollout are implemented. Insights resolves the authenticated user's authorized profile collection before accepting a `profileId` from the URL. Normal users can load only their own profile-derived Insights; admins may select all profiles. Unauthorized, missing, and invalid profile IDs use one controlled unavailable state and do not invoke the service-role Insights loader.
 
-A interface do MVP é em português. A navegação principal expõe Início, Perfis, Empresas, Vagas, Avaliar vagas e Insights. `excludedSkills` pode ficar vazio e é persistido como uma lista vazia.
+A interface do MVP é em português. A navegação principal expõe Início, Perfis, Empresas, Vagas, Caixa, Avaliar vagas e Insights. `excludedSkills` pode ficar vazio e é persistido como uma lista vazia.
 
 Não há ocorrência de `fdprocessedid` no código-fonte. Um aviso de hidratação contendo esse atributo deve ser investigado sem extensões do navegador antes de atribuí-lo ao RolePilot; não há `suppressHydrationWarning` como paliativo.
 
@@ -22,6 +22,8 @@ Job actions are independent per profile and job pair. `new` means no explicit de
 Job decision controls submit explicit status values and immediately display the returned persisted state and concise feedback. The persisted choice also remains visibly selected after the request and on a server-loaded refresh. During a decision request, only the submitted control shows a Portuguese pending label. Insights preserves its selected collected/relevant scope through GET search parameters; the relevant scope is deterministic-only.
 
 The evaluation route prioritizes compact compatible opportunities, with score, warnings, decision state, and Gemini state visible before expandable deterministic details. Rejected jobs are a secondary, on-demand diagnostic list. Evaluation loads per-profile decisions in one query and latest Gemini analyses for compatible jobs in one query; it does not cache mutable decisions or analyses. Saving a decision no longer revalidates and re-renders the full evaluation route because the action response already carries the persisted decision state.
+
+`/inbox` is the daily, profile-scoped opportunity queue. It loads active persisted jobs, companies, and selected-profile decisions in three batch reads, evaluates and ranks in memory, and never writes on read or invokes Gemini. Only deterministic-eligible active jobs appear. The default view focuses on `new` and `saved`; `applied`, `ignored`, and `rejected` remain filterable. Priority is `excellent` (80+), `good` (70–79), then `review`; ordering is priority, newest `first_seen_at`, title, and id. A new opportunity is a decisionless job first seen within 24 hours. Telegram links now target `/inbox?profileId=…`.
 
 ## Not implemented
 
