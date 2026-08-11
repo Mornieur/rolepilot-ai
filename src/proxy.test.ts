@@ -1,49 +1,24 @@
 import { NextRequest } from 'next/server';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { proxy } from './proxy';
 
-const authorizationFor = (secret: string) =>
-  `Basic ${Buffer.from(`rolepilot:${secret}`).toString('base64')}`;
-
-describe('personal MVP access proxy', () => {
-  const originalSecret = process.env.PERSONAL_ACCESS_SECRET;
-
-  beforeEach(() => {
-    process.env.PERSONAL_ACCESS_SECRET = 'test-secret';
-  });
-
-  afterEach(() => {
-    if (originalSecret === undefined) delete process.env.PERSONAL_ACCESS_SECRET;
-    else process.env.PERSONAL_ACCESS_SECRET = originalSecret;
-  });
-
-  it('blocks anonymous real-data routes with an HTTP Basic challenge', () => {
+describe('Supabase Auth access proxy', () => {
+  it('redirects an unauthenticated app route to login without an HTTP Basic challenge', () => {
     const response = proxy(new NextRequest('https://rolepilot.example/jobs'));
-    expect(response.status).toBe(401);
-    expect(response.headers.get('www-authenticate')).toContain('Basic');
-  });
-
-  it('redirects an authenticated-gate browser without a Supabase session to login', () => {
-    const response = proxy(
-      new NextRequest('https://rolepilot.example/jobs', {
-        headers: { authorization: authorizationFor('test-secret') },
-      }),
-    );
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe('https://rolepilot.example/login');
+    expect(response.headers.get('www-authenticate')).toBeNull();
   });
 
-  it('allows a browser request with both temporary gate and session cookie', () => {
+  it('allows an authenticated user without a Basic Authorization header', () => {
     const response = proxy(
       new NextRequest('https://rolepilot.example/jobs', {
-        headers: {
-          authorization: authorizationFor('test-secret'),
-          cookie: 'rolepilot-access-token=session',
-        },
+        headers: { cookie: 'rolepilot-access-token=session' },
       }),
     );
     expect(response.status).toBe(200);
+    expect(response.headers.get('www-authenticate')).toBeNull();
   });
 
   it('does not apply user access protection to the separately authenticated scheduler route', () => {
