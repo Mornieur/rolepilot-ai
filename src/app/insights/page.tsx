@@ -9,6 +9,7 @@ import {
   InsightsFilters,
 } from '@/features/job-insights/components/insights-client';
 import { insightPeriodSchema } from '@/features/job-insights/periods';
+import { selectAccessibleProfile } from '@/features/auth/policy';
 import {
   JobInsightsDataError,
   loadJobInsights,
@@ -35,9 +36,10 @@ export default async function InsightsPage({
     );
   const period = insightPeriodSchema.catch('30d').parse(params.period);
   const scope = params.scope === 'relevant' ? 'relevant' : 'all';
-  const profileId = params.profileId ?? profiles.profiles[0]?.id;
+  const profile = selectAccessibleProfile(profiles.profiles, params.profileId);
+  const profileId = profile?.id;
   let insight = null;
-  let error: string | null = null;
+  let error: string | null = params.profileId && !profile ? 'Perfil indisponível.' : null;
   if (profileId)
     try {
       insight = await loadJobInsights(profileId, period, scope);

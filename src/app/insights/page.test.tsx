@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const dependencies = vi.hoisted(() => ({ profiles: vi.fn(), insights: vi.fn() }));
+const dependencies = vi.hoisted(() => ({ profiles: vi.fn(), insights: vi.fn(), user: vi.fn() }));
 vi.mock('@/features/auth/server/auth', () => ({
-  requirePageUser: vi.fn().mockResolvedValue({ id: 'user-1', role: 'user' }),
+  requirePageUser: dependencies.user,
 }));
 vi.mock('@/features/profiles/server/load-profiles', () => ({
   loadCandidateProfiles: dependencies.profiles,
@@ -48,7 +48,18 @@ const insight = {
   },
 };
 describe('InsightsPage', () => {
+  beforeEach(() => {
+    dependencies.profiles.mockReset();
+    dependencies.insights.mockReset();
+    dependencies.user.mockReset();
+  });
+
+  function setupUser(role: 'admin' | 'user' = 'user') {
+    dependencies.user.mockResolvedValue({ id: 'user-1', role, email: null, displayName: null });
+  }
+
   it('renders accessible profile and period selection with descriptive metrics and small-sample warning', async () => {
+    setupUser();
     dependencies.profiles.mockResolvedValue({ profiles: [profile], error: null });
     dependencies.insights.mockResolvedValue(insight);
     render(
@@ -64,6 +75,7 @@ describe('InsightsPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Amostra muito pequena');
   });
   it('uses selected query values and renders empty and controlled error states', async () => {
+    setupUser();
     dependencies.profiles.mockResolvedValue({ profiles: [profile, secondProfile], error: null });
     dependencies.insights.mockResolvedValue({ ...insight, sampleSize: 0, profile: secondProfile });
     const view = render(
@@ -88,6 +100,7 @@ describe('InsightsPage', () => {
     );
   });
   it('forwards the relevant scope and renders its selected subset explanation', async () => {
+    setupUser();
     dependencies.profiles.mockResolvedValue({ profiles: [profile], error: null });
     dependencies.insights.mockResolvedValue({ ...insight, sampleSize: 1 });
     render(
@@ -100,5 +113,46 @@ describe('InsightsPage', () => {
     expect(
       screen.getByText(/Com base em 1 vagas compatíveis com este perfil\./),
     ).toBeInTheDocument();
+  });
+  it('allows an owner to load their own Insights and exposes only their profile selector options', async () => {
+    setupUser();
+    dependencies.profiles.mockResolvedValue({ profiles: [profile], error: null });
+    dependencies.insights.mockResolvedValue(insight);
+
+    render(await InsightsPage({ searchParams: Promise.resolve({ profileId: profile.id }) }));
+
+    expect(dependencies.insights).toHaveBeenCalledWith(profile.id, '30d', 'all');
+    expect(screen.getByLabelText('Perfil')).toHaveTextContent('Maria');
+    expect(screen.getByLabelText('Perfil')).not.toHaveTextContent('Flávia');
+  });
+  it('does not load Insights or reveal profile existence for an unauthorized or missing URL profileId', async () => {
+    setupUser();
+    dependencies.profiles.mockResolvedValue({ profiles: [profile], error: null });
+
+    const unauthorized = render(
+      await InsightsPage({ searchParams: Promise.resolve({ profileId: secondProfile.id }) }),
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Perfil indisponível.');
+    expect(dependencies.insights).not.toHaveBeenCalled();
+    unauthorized.unmount();
+
+    render(
+      await InsightsPage({
+        searchParams: Promise.resolve({ profileId: 'not-a-profile-id' }),
+      }),
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Perfil indisponível.');
+    expect(dependencies.insights).not.toHaveBeenCalled();
+  });
+  it('allows an admin to select and load any profile returned by the authorized profile list', async () => {
+    setupUser('admin');
+    dependencies.profiles.mockResolvedValue({ profiles: [profile, secondProfile], error: null });
+    dependencies.insights.mockResolvedValue({ ...insight, profile: secondProfile });
+
+    render(await InsightsPage({ searchParams: Promise.resolve({ profileId: secondProfile.id }) }));
+
+    expect(dependencies.insights).toHaveBeenCalledWith(secondProfile.id, '30d', 'all');
+    expect(screen.getByLabelText('Perfil')).toHaveTextContent('Maria');
+    expect(screen.getByLabelText('Perfil')).toHaveTextContent('Flávia');
   });
 });

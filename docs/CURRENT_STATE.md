@@ -11,7 +11,7 @@
 
 ## Implemented
 
-Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, manual structured Gemini analysis with persisted history, job actions, deterministic insights, and the FeitozaUI visual rollout are implemented.
+Candidate profiles, target companies, Greenhouse preview, manual collection with deduplication, persisted jobs, deterministic filtering, manual structured Gemini analysis with persisted history, job actions, deterministic insights, and the FeitozaUI visual rollout are implemented. Insights resolves the authenticated user's authorized profile collection before accepting a `profileId` from the URL. Normal users can load only their own profile-derived Insights; admins may select all profiles. Unauthorized, missing, and invalid profile IDs use one controlled unavailable state and do not invoke the service-role Insights loader.
 
 A interface do MVP é em português. A navegação principal expõe Início, Perfis, Empresas, Vagas, Avaliar vagas e Insights. `excludedSkills` pode ficar vazio e é persistido como uma lista vazia.
 

@@ -6,6 +6,8 @@ RolePilot usa Supabase Auth com e-mail e senha. Não há cadastro público, OAut
 
 `SUPABASE_SERVICE_ROLE_KEY` permanece server-only e ignora RLS. Cada mutação de usuário resolve a sessão e recarrega propriedade/papel; scheduler, coleta e worker Telegram continuam caminhos de sistema com service role e bearer próprio.
 
+Em `/insights`, a página resolve primeiro a lista de perfis autorizados para a sessão e seleciona o `profileId` somente dessa lista antes de carregar decisões ou outros dados derivados. Assim, o cliente service-role usado pelos repositórios não pode transformar um `profileId` arbitrário da URL em acesso a dados privados; perfis ausentes e não autorizados seguem a mesma resposta controlada.
+
 ## Rollout staged
 
 1. Aplicar `202608110001_auth_ownership_and_rls_foundation.sql`; `candidate_profiles.user_id` começa anulável e nada é atribuído automaticamente.
