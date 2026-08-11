@@ -7,4 +7,4 @@
 5. **Implemented and production smoke-tested:** Supabase Auth is the interactive-user boundary with private email/password login, persisted roles, profile ownership, RLS, and server authorization; the temporary HTTP Basic gate is removed.
 6. **Planned:** a second adapter and additional product workflows.
 
-No dates are committed.
+No dates are committed. 7. **Implemented, pending deployed smoke test:** admin-only deterministic matching diagnostics. The surface is descriptive and read-only; calibration remains a separate milestone after real current-sample review.

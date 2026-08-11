@@ -12,7 +12,7 @@ export function AppShell({
   currentUser,
   logout,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   currentUser?: { email: string | null; role: 'admin' | 'user'; displayName: string | null } | null;
   logout?: React.ReactNode;
 }) {
@@ -49,6 +49,7 @@ export function AppShell({
             <Link href="/jobs">Vagas</Link>
             <Link href="/jobs/evaluate">Avaliar vagas</Link>
             <Link href="/insights">Insights</Link>
+            {currentUser?.role === 'admin' && <Link href="/insights/matching">Diagnóstico</Link>}
             {currentUser && (
               <span className="text-slate-600 dark:text-slate-300">
                 {currentUser.displayName ?? currentUser.email}{' '}
