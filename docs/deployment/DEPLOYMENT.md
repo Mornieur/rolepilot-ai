@@ -48,10 +48,25 @@ user access, and an interactive user session does not grant system-route access.
 
 ## Limits and follow-up
 
-`maxDuration = 60` is explicitly configured on the scheduler route. This accommodates the
-observed 21–24 second collection while remaining within Vercel Hobby's 60-second configurable
-limit when Fluid compute is unavailable. Reassess the duration if enabled companies or provider
-latency materially increase.
+`maxDuration = 180` is explicitly configured on the scheduler route. Vercel's current Fluid
+Compute documentation permits up to 300 seconds on Hobby, so this remains bounded while leaving
+meaningful headroom above observed 50-55 second collections. The workflow's `curl` has a separate
+10-second connection timeout and 210-second total timeout; the collection job itself has a
+5-minute ceiling. Confirm Fluid Compute remains enabled for the production project before relying
+on the 180-second setting.
+
+The scheduler recovers a `collection_runs` row only after it has remained `running` for more than
+5 minutes, which is greater than the maximum legitimate 180-second execution. Recovery atomically
+marks that historical row `failed` and sets `finished_at`, without changing its counters or company
+results, then acquires a replacement row subject to the existing unique-running index. A recent
+overlap returns 409 and is a controlled workflow skip; authorization failures, other client errors,
+server errors, and transport failures remain workflow failures. This requires migration
+`202608110002_acquire_collection_run_with_stale_recovery.sql`; do not apply it remotely without
+the normal authorized migration procedure.
+
+The previously abandoned production run `00084f32-81b0-4e9f-8e20-7855d04c87df` may be manually
+finalized only after confirming it is still stale. Do not run an automated production repair from
+this repository.
 
 The service-role key must remain server-only in every environment. Public signup, OAuth, and
 broader multi-tenant product rollout remain out of scope.

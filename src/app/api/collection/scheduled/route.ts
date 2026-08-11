@@ -4,7 +4,7 @@ import { CollectionAlreadyRunningError } from '@/features/job-collection/server/
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 function authorized(request: Request) {
   const secret = process.env.SCHEDULER_SECRET;

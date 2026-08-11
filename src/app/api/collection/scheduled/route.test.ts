@@ -7,6 +7,7 @@ vi.mock('@/features/job-collection/server/collection-runs', () => ({
   CollectionAlreadyRunningError: overlap,
 }));
 import { POST } from './route';
+import { maxDuration } from './route';
 describe('scheduled collection route', () => {
   beforeEach(() => {
     process.env.SCHEDULER_SECRET = 'secret';
@@ -36,6 +37,9 @@ describe('scheduled collection route', () => {
     expect(run).toHaveBeenCalledOnce();
     expect(run).toHaveBeenCalledWith('scheduled');
     expect(JSON.stringify(await response.json())).not.toContain('secret');
+  });
+  it('uses the bounded 180-second scheduler duration', () => {
+    expect(maxDuration).toBe(180);
   });
   it('returns a controlled failure', async () => {
     run.mockRejectedValueOnce(new Error('internal'));
