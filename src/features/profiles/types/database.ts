@@ -231,7 +231,12 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      acquire_collection_run: {
+        Args: { p_trigger: string; p_stale_before: string };
+        Returns: { run_id: string | null; acquired: boolean }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

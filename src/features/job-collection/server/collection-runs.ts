@@ -4,15 +4,16 @@ import type { CollectionRunResult, CollectionTrigger } from '@/features/job-coll
 
 export class CollectionAlreadyRunningError extends Error {}
 
+export const COLLECTION_RUN_STALE_AFTER_MS = 5 * 60 * 1000;
+
 export async function startCollectionRun(trigger: CollectionTrigger) {
+  const staleBefore = new Date(Date.now() - COLLECTION_RUN_STALE_AFTER_MS).toISOString();
   const { data, error } = await getSupabaseServerClient()
-    .from('collection_runs')
-    .insert({ trigger, status: 'running' })
-    .select('*')
-    .single();
-  if (error?.code === '23505') throw new CollectionAlreadyRunningError();
+    .rpc('acquire_collection_run', { p_trigger: trigger, p_stale_before: staleBefore })
+    .maybeSingle();
   if (error || !data) throw new Error('collection-run-unavailable');
-  return data;
+  if (!data.acquired || !data.run_id) throw new CollectionAlreadyRunningError();
+  return { id: data.run_id };
 }
 export async function finishCollectionRun(id: string, result: CollectionRunResult) {
   const { error } = await getSupabaseServerClient()
