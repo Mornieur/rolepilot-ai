@@ -292,14 +292,15 @@ export const opportunityDossierJsonSchema = {
   },
 } as const;
 
-const providerEvidenceJsonSchema = { type: 'array', items: { type: 'string' } } as const;
+const providerEvidenceJsonSchema = (maxItems: number) =>
+  ({ type: 'array', maxItems, items: { type: 'string' } }) as const;
 const providerTopicJsonSchema = {
   type: 'object',
   required: ['topic', 'why', 'sourceIds'],
   properties: {
     topic: textJsonSchema,
     why: textJsonSchema,
-    sourceIds: providerEvidenceJsonSchema,
+    sourceIds: providerEvidenceJsonSchema(4),
   },
 } as const;
 const providerImpactJsonSchema = {
@@ -312,9 +313,10 @@ const providerImpactJsonSchema = {
 } as const;
 
 /**
- * Gemini's guide schema intentionally omits output limits, object closure, and
- * repeated evidence objects. The authoritative contract remains
- * opportunityDossierSchema below the deterministic mapping boundary.
+ * Gemini's guide schema intentionally omits object closure, string limits, and
+ * repeated evidence objects. It retains array cardinality so Gemini is asked
+ * to produce output accepted by the authoritative contract below the
+ * deterministic mapping boundary.
  */
 export const geminiProviderDossierJsonSchema = {
   type: 'object',
@@ -350,13 +352,14 @@ export const geminiProviderDossierJsonSchema = {
         overview: textJsonSchema,
         categories: {
           type: 'array',
+          maxItems: 8,
           items: {
             type: 'object',
             required: ['label', 'confidence', 'sourceIds'],
             properties: {
               label: textJsonSchema,
               confidence: evidenceJsonSchema.properties.classification,
-              sourceIds: providerEvidenceJsonSchema,
+              sourceIds: providerEvidenceJsonSchema(4),
             },
           },
         },
@@ -364,7 +367,7 @@ export const geminiProviderDossierJsonSchema = {
         stage: textJsonSchema,
         publicPrivateStatus: textJsonSchema,
         size: textJsonSchema,
-        markets: { type: 'array', items: textJsonSchema },
+        markets: textArrayJsonSchema(8),
         engineeringContext: textJsonSchema,
       },
     },
@@ -372,10 +375,10 @@ export const geminiProviderDossierJsonSchema = {
       type: 'object',
       required: ['knownFacts', 'recentDevelopments', 'inferences', 'unknowns'],
       properties: {
-        knownFacts: { type: 'array', items: textJsonSchema },
-        recentDevelopments: { type: 'array', items: textJsonSchema },
-        inferences: { type: 'array', items: textJsonSchema },
-        unknowns: { type: 'array', items: textJsonSchema },
+        knownFacts: textArrayJsonSchema(8),
+        recentDevelopments: textArrayJsonSchema(8),
+        inferences: textArrayJsonSchema(8),
+        unknowns: textArrayJsonSchema(8),
       },
     },
     compensation: {
@@ -390,13 +393,13 @@ export const geminiProviderDossierJsonSchema = {
         'unknowns',
       ],
       properties: {
-        observations: { type: 'array', items: textJsonSchema },
+        observations: textArrayJsonSchema(8),
         estimatedRange: { type: ['string', 'null'] },
         currencyUnit: { type: ['string', 'null'] },
-        components: { type: 'array', items: textJsonSchema },
+        components: textArrayJsonSchema(4),
         confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
-        conflicts: { type: 'array', items: textJsonSchema },
-        unknowns: { type: 'array', items: textJsonSchema },
+        conflicts: textArrayJsonSchema(6),
+        unknowns: textArrayJsonSchema(6),
       },
     },
     hiringProcess: {
@@ -408,9 +411,9 @@ export const geminiProviderDossierJsonSchema = {
         'confidence',
       ],
       properties: {
-        officialKnownStages: { type: 'array', items: textJsonSchema },
-        anecdotalReportedStages: { type: 'array', items: textJsonSchema },
-        likelyExpectations: { type: 'array', items: textJsonSchema },
+        officialKnownStages: textArrayJsonSchema(8),
+        anecdotalReportedStages: textArrayJsonSchema(8),
+        likelyExpectations: textArrayJsonSchema(8),
         confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
       },
     },
@@ -420,7 +423,7 @@ export const geminiProviderDossierJsonSchema = {
       properties: Object.fromEntries(
         ['mustReview', 'shouldReview', 'optional', 'behavioral', 'companyKnowledge'].map((key) => [
           key,
-          { type: 'array', items: providerTopicJsonSchema },
+          { type: 'array', maxItems: 8, items: providerTopicJsonSchema },
         ]),
       ),
     },
@@ -428,10 +431,10 @@ export const geminiProviderDossierJsonSchema = {
       type: 'object',
       required: ['alreadyStrong', 'refresh', 'realGaps', 'unknowns'],
       properties: {
-        alreadyStrong: { type: 'array', items: textJsonSchema },
-        refresh: { type: 'array', items: textJsonSchema },
-        realGaps: { type: 'array', items: textJsonSchema },
-        unknowns: { type: 'array', items: textJsonSchema },
+        alreadyStrong: textArrayJsonSchema(8),
+        refresh: textArrayJsonSchema(8),
+        realGaps: textArrayJsonSchema(8),
+        unknowns: textArrayJsonSchema(8),
       },
     },
     careerImpact: {
@@ -461,19 +464,23 @@ export const geminiProviderDossierJsonSchema = {
       type: 'object',
       required: ['emphasize', 'storiesToPrepare', 'evidenceToQuantify'],
       properties: {
-        emphasize: { type: 'array', items: textJsonSchema },
-        storiesToPrepare: { type: 'array', items: textJsonSchema },
-        evidenceToQuantify: { type: 'array', items: textJsonSchema },
+        emphasize: textArrayJsonSchema(8),
+        storiesToPrepare: textArrayJsonSchema(8),
+        evidenceToQuantify: textArrayJsonSchema(8),
       },
     },
-    questionsToInvestigate: { type: 'array', items: textJsonSchema },
-    citations: providerEvidenceJsonSchema,
+    questionsToInvestigate: textArrayJsonSchema(10),
+    citations: providerEvidenceJsonSchema(30),
     researchTimestamp: textJsonSchema,
   },
 } as const;
 
-const providerEvidence = z.array(z.string().uuid());
-const providerTopic = z.object({ topic: z.string(), why: z.string(), sourceIds: providerEvidence });
+const providerEvidence = (maxItems: number) => z.array(z.string().uuid()).max(maxItems);
+const providerTopic = z.object({
+  topic: z.string(),
+  why: z.string(),
+  sourceIds: providerEvidence(4),
+});
 const providerImpact = z.object({
   level: z.enum(['strong', 'moderate', 'limited', 'unknown']),
   explanation: z.string(),
@@ -483,53 +490,55 @@ export const geminiProviderDossierSchema = z.object({
   opportunitySummary: z.string(),
   company: z.object({
     overview: z.string(),
-    categories: z.array(
-      z.object({
-        label: z.string(),
-        confidence: evidence.shape.classification,
-        sourceIds: providerEvidence,
-      }),
-    ),
+    categories: z
+      .array(
+        z.object({
+          label: z.string(),
+          confidence: evidence.shape.classification,
+          sourceIds: providerEvidence(4),
+        }),
+      )
+      .max(8),
     businessModel: z.string(),
     stage: z.string(),
     publicPrivateStatus: z.string(),
     size: z.string(),
-    markets: z.array(z.string()),
+    markets: z.array(z.string()).max(8),
     engineeringContext: z.string(),
   }),
   companyMoment: z.object({
-    knownFacts: z.array(z.string()),
-    recentDevelopments: z.array(z.string()),
-    inferences: z.array(z.string()),
-    unknowns: z.array(z.string()),
+    knownFacts: z.array(z.string()).max(8),
+    recentDevelopments: z.array(z.string()).max(8),
+    inferences: z.array(z.string()).max(8),
+    unknowns: z.array(z.string()).max(8),
   }),
   compensation: z.object({
-    observations: z.array(z.string()),
+    observations: z.array(z.string()).max(8),
     estimatedRange: z.string().nullable(),
     currencyUnit: z.string().nullable(),
-    components: z.array(z.string()),
+    components: z.array(z.string()).max(4),
     confidence: z.enum(['low', 'medium', 'high']),
-    conflicts: z.array(z.string()),
-    unknowns: z.array(z.string()),
+    conflicts: z.array(z.string()).max(6),
+    unknowns: z.array(z.string()).max(6),
   }),
   hiringProcess: z.object({
-    officialKnownStages: z.array(z.string()),
-    anecdotalReportedStages: z.array(z.string()),
-    likelyExpectations: z.array(z.string()),
+    officialKnownStages: z.array(z.string()).max(8),
+    anecdotalReportedStages: z.array(z.string()).max(8),
+    likelyExpectations: z.array(z.string()).max(8),
     confidence: z.enum(['low', 'medium', 'high']),
   }),
   preparation: z.object({
-    mustReview: z.array(providerTopic),
-    shouldReview: z.array(providerTopic),
-    optional: z.array(providerTopic),
-    behavioral: z.array(providerTopic),
-    companyKnowledge: z.array(providerTopic),
+    mustReview: z.array(providerTopic).max(8),
+    shouldReview: z.array(providerTopic).max(8),
+    optional: z.array(providerTopic).max(8),
+    behavioral: z.array(providerTopic).max(8),
+    companyKnowledge: z.array(providerTopic).max(8),
   }),
   candidateFit: z.object({
-    alreadyStrong: z.array(z.string()),
-    refresh: z.array(z.string()),
-    realGaps: z.array(z.string()),
-    unknowns: z.array(z.string()),
+    alreadyStrong: z.array(z.string()).max(8),
+    refresh: z.array(z.string()).max(8),
+    realGaps: z.array(z.string()).max(8),
+    unknowns: z.array(z.string()).max(8),
   }),
   careerImpact: z.object({
     technicalGrowth: providerImpact,
@@ -541,12 +550,12 @@ export const geminiProviderDossierSchema = z.object({
     roleScopeRisk: providerImpact,
   }),
   applicationPositioning: z.object({
-    emphasize: z.array(z.string()),
-    storiesToPrepare: z.array(z.string()),
-    evidenceToQuantify: z.array(z.string()),
+    emphasize: z.array(z.string()).max(8),
+    storiesToPrepare: z.array(z.string()).max(8),
+    evidenceToQuantify: z.array(z.string()).max(8),
   }),
-  questionsToInvestigate: z.array(z.string()),
-  citations: providerEvidence,
+  questionsToInvestigate: z.array(z.string()).max(10),
+  citations: providerEvidence(30),
   researchTimestamp: z.string(),
 });
 
