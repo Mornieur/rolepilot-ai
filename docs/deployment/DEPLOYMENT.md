@@ -17,6 +17,7 @@ user access, and an interactive user session does not grant system-route access.
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `GEMINI_API_KEY`
    - `GEMINI_MODEL`
+   - `TAVILY_API_KEY` (server-only; used exclusively by explicit opportunity research)
    - `SCHEDULER_SECRET`
    - `NOTIFICATION_WORKER_SECRET`
    - `TELEGRAM_BOT_TOKEN`

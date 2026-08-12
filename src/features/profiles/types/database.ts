@@ -79,6 +79,38 @@ export type JobAiAnalysisRow = {
   input_fingerprint: string | null;
   created_at: string;
 };
+export type OpportunityResearchDossierRow = {
+  id: string;
+  profile_id: string;
+  job_id: string;
+  schema_version: string;
+  status: 'pending' | 'completed' | 'failed';
+  research_fingerprint: string;
+  structured_result: unknown | null;
+  research_provider: 'tavily';
+  synthesis_provider: 'gemini' | null;
+  synthesis_model: string | null;
+  researched_at: string | null;
+  expires_at: string | null;
+  error_classification: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type OpportunityResearchSourceRow = {
+  id: string;
+  dossier_id: string;
+  tier: number;
+  source_kind: string;
+  title: string;
+  organization: string | null;
+  domain: string;
+  url: string;
+  published_at: string | null;
+  collected_at: string;
+  evidence_scopes: string[] | null;
+  normalized_excerpt: string;
+  evidence_classification: string;
+};
 export type CollectionRunRow = {
   id: string;
   trigger: string;
@@ -157,6 +189,27 @@ export type Database = {
       job_ai_analyses: {
         Row: JobAiAnalysisRow;
         Insert: Omit<JobAiAnalysisRow, 'id' | 'created_at'> & { id?: string; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
+      opportunity_research_dossiers: {
+        Row: OpportunityResearchDossierRow;
+        Insert: Omit<OpportunityResearchDossierRow, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Omit<OpportunityResearchDossierRow, 'id' | 'profile_id' | 'job_id' | 'created_at'>
+        >;
+        Relationships: [];
+      };
+      opportunity_research_sources: {
+        Row: OpportunityResearchSourceRow;
+        Insert: Omit<OpportunityResearchSourceRow, 'id' | 'collected_at'> & {
+          id?: string;
+          collected_at?: string;
+        };
         Update: never;
         Relationships: [];
       };

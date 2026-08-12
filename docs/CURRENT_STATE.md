@@ -76,6 +76,10 @@ conteúdo da vaga é o mesmo.
 
 # Admin matching diagnostics
 
+## Opportunity Intelligence V1
+
+`/opportunities/[jobId]?profileId=…` resolves an authorized profile before derived loading and shows deterministic job evidence with no AI or retrieval. The explicit research action is the only Tavily/Gemini entry point. Local-only migration `202608110003_opportunity_research_dossiers.sql` adds profile-owned dossier/source persistence and has not been applied remotely.
+
 `/insights/matching` is an admin-only, server-authorized, read-only diagnostic
 surface. It evaluates the current persisted sample with the existing
 deterministic matcher and profile-specific decisions, with bounded batch reads

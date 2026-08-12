@@ -6,11 +6,11 @@ const priorityLabels = { excellent: 'Excelente', good: 'Boa', review: 'Revisar' 
 const compact = (value: string | null | undefined, max = 240) =>
   (value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 
-function rolePilotUrl(profileId: string) {
+function rolePilotUrl(profileId: string, jobId: string) {
   const value = process.env.NEXT_PUBLIC_APP_URL;
   if (!value) return null;
   try {
-    const url = new URL('/inbox', value);
+    const url = new URL(`/opportunities/${encodeURIComponent(jobId)}`, value);
     if (!['http:', 'https:'].includes(url.protocol)) return null;
     url.searchParams.set('profileId', profileId);
     return url.toString();
@@ -36,7 +36,7 @@ export function formatTelegramJobNotification(
     'Abrir vaga:',
     compact(job.originalUrl, 1_500),
   ];
-  const appUrl = rolePilotUrl(event.profileId);
+  const appUrl = rolePilotUrl(event.profileId, job.id);
   if (appUrl) lines.push('', 'RolePilot:', appUrl);
   return lines.join('\n').slice(0, maxTelegramLength);
 }
