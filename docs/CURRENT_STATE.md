@@ -78,7 +78,7 @@ conteúdo da vaga é o mesmo.
 
 ## Opportunity Intelligence V1
 
-`/opportunities/[jobId]?profileId=…` resolves an authorized profile before derived loading and shows deterministic job evidence with no AI or retrieval. The explicit research action is the only Tavily/Gemini entry point. Local-only migration `202608110003_opportunity_research_dossiers.sql` adds profile-owned dossier/source persistence and has not been applied remotely.
+`/opportunities/[jobId]?profileId=…` resolves an authorized profile before derived loading and shows deterministic job evidence with no AI or retrieval. The explicit research action is the only Tavily/Gemini entry point. One Tavily retrieval pass feeds two sequential bounded Gemini structured calls (Company Intelligence then Candidate/Application Intelligence); cache hits call neither provider. The split follows manual contract-canary evidence that isolated sections pass but cumulative structured-output complexity fails. Local-only migration `202608110003_opportunity_research_dossiers.sql` adds profile-owned dossier/source persistence and has not been applied remotely.
 
 `/insights/matching` is an admin-only, server-authorized, read-only diagnostic
 surface. It evaluates the current persisted sample with the existing
