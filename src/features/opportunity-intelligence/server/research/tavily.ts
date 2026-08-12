@@ -16,19 +16,19 @@ function domain(url: string) {
 }
 function classify(error: unknown, extraction = false): ResearchProviderError {
   if (error instanceof DOMException && error.name === 'TimeoutError')
-    return new ResearchProviderError('search_timeout');
+    return new ResearchProviderError('tavily_timeout');
   if (
     typeof error === 'object' &&
     error &&
     'status' in error &&
-    (error as { status?: number }).status === 429
+    typeof (error as { status?: unknown }).status === 'number'
   )
-    return new ResearchProviderError('search_rate_limit');
-  return new ResearchProviderError(extraction ? 'source_extract_failure' : 'search_unavailable');
+    return new ResearchProviderError('tavily_http', (error as { status: number }).status);
+  return new ResearchProviderError(extraction ? 'tavily_extract' : 'tavily_network');
 }
 async function request(path: string, body: Record<string, unknown>, extraction = false) {
   const apiKey = process.env.TAVILY_API_KEY;
-  if (!apiKey) throw new ResearchProviderError('research_configuration');
+  if (!apiKey) throw new ResearchProviderError('tavily_configuration');
   try {
     const response = await fetch(`${apiBase}${path}`, {
       method: 'POST',

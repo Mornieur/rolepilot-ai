@@ -7,7 +7,9 @@ import type {
   OpportunityResearchSourceRow,
 } from '@/features/profiles/types/database';
 export class OpportunityResearchDataError extends Error {
-  constructor() {
+  constructor(
+    public operation: 'cache_read' | 'dossier_persistence' | 'source_persistence' = 'cache_read',
+  ) {
     super('A inteligência da oportunidade está indisponível agora.');
   }
 }
@@ -32,7 +34,7 @@ function dossier(row: OpportunityResearchDossierRow, sources: ResearchSource[]):
     ? opportunityDossierSchema.safeParse(row.structured_result)
     : null;
   if (row.status === 'completed' && (!parsed || !parsed.success))
-    throw new OpportunityResearchDataError();
+    throw new OpportunityResearchDataError('cache_read');
   return {
     id: row.id,
     profileId: row.profile_id,
@@ -57,13 +59,13 @@ export async function getLatestResearchDossier(profileId: string, jobId: string)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error) throw new OpportunityResearchDataError();
+  if (error) throw new OpportunityResearchDataError('cache_read');
   if (!data) return null;
   const { data: sourceRows, error: sourceError } = await client
     .from('opportunity_research_sources')
     .select('*')
     .eq('dossier_id', data.id);
-  if (sourceError) throw new OpportunityResearchDataError();
+  if (sourceError) throw new OpportunityResearchDataError('cache_read');
   return dossier(data, (sourceRows ?? []).map(source));
 }
 export async function persistCompletedDossier(
@@ -90,7 +92,7 @@ export async function persistCompletedDossier(
     })
     .select()
     .single();
-  if (error || !data) throw new OpportunityResearchDataError();
+  if (error || !data) throw new OpportunityResearchDataError('dossier_persistence');
   const { data: rows, error: sourceError } = await client
     .from('opportunity_research_sources')
     .insert(
@@ -110,6 +112,6 @@ export async function persistCompletedDossier(
       })),
     )
     .select();
-  if (sourceError) throw new OpportunityResearchDataError();
+  if (sourceError) throw new OpportunityResearchDataError('source_persistence');
   return dossier(data, (rows ?? []).map(source));
 }

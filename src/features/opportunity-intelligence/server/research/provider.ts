@@ -21,11 +21,12 @@ export interface OpportunityResearchProvider {
 export class ResearchProviderError extends Error {
   constructor(
     public classification:
-      | 'research_configuration'
-      | 'search_timeout'
-      | 'search_rate_limit'
-      | 'search_unavailable'
-      | 'source_extract_failure',
+      | 'tavily_configuration'
+      | 'tavily_timeout'
+      | 'tavily_http'
+      | 'tavily_network'
+      | 'tavily_extract',
+    public httpStatus?: number,
   ) {
     super('A pesquisa externa está indisponível agora.');
   }
