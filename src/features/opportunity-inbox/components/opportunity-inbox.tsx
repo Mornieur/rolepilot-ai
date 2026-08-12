@@ -15,7 +15,7 @@ import type { JobUserStatus } from '@/types/domain';
 
 const priorityLabels = { excellent: 'Excelente', good: 'Boa', review: 'Revisar' } as const;
 const decisionLabels = {
-  new: 'Nova',
+  new: 'Sem decisão',
   saved: 'Salva',
   applied: 'Candidatei',
   ignored: 'Ignorada',
@@ -205,7 +205,7 @@ export function OpportunityInbox({
   function decisionChanged(jobId: string, decision: JobUserStatus) {
     setOpportunities((current) =>
       current.map((opportunity) =>
-        opportunity.job.id === jobId ? { ...opportunity, decision, isNew: false } : opportunity,
+        opportunity.job.id === jobId ? { ...opportunity, decision } : opportunity,
       ),
     );
   }
@@ -213,8 +213,10 @@ export function OpportunityInbox({
     status === 'saved'
       ? 'Você ainda não salvou oportunidades.'
       : status === 'new'
-        ? 'Você está em dia. Nenhuma nova oportunidade para revisar.'
-        : 'Nenhuma oportunidade compatível no momento.';
+        ? 'Nenhuma oportunidade sem decisão no momento.'
+        : status === 'actionable'
+          ? 'Nenhuma oportunidade sem decisão ou salva no momento.'
+          : 'Nenhuma oportunidade compatível no momento.';
   return (
     <section className="mt-6" aria-labelledby="inbox-heading">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo diário">
@@ -238,8 +240,8 @@ export function OpportunityInbox({
             onChange={(event) => setStatus(event.target.value)}
             fullWidth
           >
-            <option value="actionable">Novas e salvas</option>
-            <option value="new">Novas</option>
+            <option value="actionable">Sem decisão e salvas</option>
+            <option value="new">Sem decisão</option>
             <option value="saved">Salvas</option>
             <option value="applied">Candidatei</option>
             <option value="ignored">Ignoradas</option>

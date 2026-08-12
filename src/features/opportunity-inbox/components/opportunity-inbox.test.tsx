@@ -10,7 +10,12 @@ vi.mock('@/features/job-actions/actions', () => ({
 
 import { OpportunityInbox } from './opportunity-inbox';
 
-const opportunity = (id: string, companyName: string, decision: InboxOpportunity['decision']) =>
+const opportunity = (
+  id: string,
+  companyName: string,
+  decision: InboxOpportunity['decision'],
+  isNew = false,
+) =>
   ({
     job: {
       id,
@@ -48,7 +53,7 @@ const opportunity = (id: string, companyName: string, decision: InboxOpportunity
     companyName,
     decision,
     priority: 'excellent',
-    isNew: decision === 'new',
+    isNew,
   }) as InboxOpportunity;
 
 describe('OpportunityInbox interactivity', () => {
@@ -57,6 +62,35 @@ describe('OpportunityInbox interactivity', () => {
       .mockReset()
       .mockResolvedValue({ status: 'success', current: 'saved', message: 'DecisÃ£o salva.' }),
   );
+
+  it('separates the decision label from the recency indicator', () => {
+    render(
+      <OpportunityInbox
+        profileId="profile-1"
+        opportunities={[
+          opportunity('old-undecided', 'Acme', 'new'),
+          opportunity('recent-undecided', 'Beta', 'new', true),
+          opportunity('recent-saved', 'Gamma', 'saved', true),
+        ]}
+        summary={{ compatible: 3, new: 2, saved: 1, excellent: 3 }}
+      />,
+    );
+
+    const oldCard = screen.getByText('Senior Frontend Engineer old-undecided').closest('article');
+    expect(oldCard).toHaveTextContent('Sem decisão');
+    expect(oldCard).not.toHaveTextContent('Nova');
+
+    const recentCard = screen
+      .getByText('Senior Frontend Engineer recent-undecided')
+      .closest('article');
+    expect(recentCard).toHaveTextContent('Sem decisão');
+    expect(recentCard).toHaveTextContent('Nova');
+
+    const savedCard = screen.getByText('Senior Frontend Engineer recent-saved').closest('article');
+    expect(savedCard).toHaveTextContent('Salva');
+    expect(savedCard).toHaveTextContent('Nova');
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
 
   it('filters opportunities by status, priority, and company inside the client boundary', () => {
     render(
@@ -76,6 +110,10 @@ describe('OpportunityInbox interactivity', () => {
 
     fireEvent.change(screen.getByLabelText('Prioridade'), { target: { value: 'review' } });
     expect(screen.getByRole('heading', { name: /salvou oportunidades/ })).toBeInTheDocument();
+
+    expect(screen.getByRole('option', { name: 'Sem decisão e salvas' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Sem decisão' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Novas' })).not.toBeInTheDocument();
   });
 
   it('executes a quick action and immediately reflects its persisted decision', async () => {
