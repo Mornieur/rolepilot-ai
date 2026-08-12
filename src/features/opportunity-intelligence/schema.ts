@@ -1,5 +1,7 @@
 import { z } from 'zod';
-export const OPPORTUNITY_DOSSIER_SCHEMA_VERSION = '1';
+export const OPPORTUNITY_DOSSIER_SCHEMA_VERSION = '2';
+/** This version describes the deliberately small Gemini transport contract, not the persisted domain. */
+export const GEMINI_PROVIDER_DOSSIER_VERSION = '2';
 const evidence = z.object({
   sourceId: z.string().uuid(),
   classification: z.enum(['known', 'likely', 'anecdotal', 'unknown']),
@@ -292,30 +294,29 @@ export const opportunityDossierJsonSchema = {
   },
 } as const;
 
-const providerEvidenceJsonSchema = { type: 'array', items: { type: 'string' } } as const;
-const providerTopicJsonSchema = {
+const providerIds = z.array(z.string()).max(4);
+const providerFinding = z.object({
+  text: z.string(),
+  sourceIds: providerIds,
+  confidence: z.enum(['low', 'medium', 'high']),
+});
+const providerFindings = z.array(providerFinding).max(5);
+const providerFindingJsonSchema = {
   type: 'object',
-  required: ['topic', 'why', 'sourceIds'],
+  required: ['text', 'sourceIds', 'confidence'],
   properties: {
-    topic: textJsonSchema,
-    why: textJsonSchema,
-    sourceIds: providerEvidenceJsonSchema,
+    text: { type: 'string' },
+    sourceIds: { type: 'array', maxItems: 4, items: { type: 'string' } },
+    confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
   },
 } as const;
-const providerImpactJsonSchema = {
-  type: 'object',
-  required: ['level', 'explanation'],
-  properties: {
-    level: { type: 'string', enum: ['strong', 'moderate', 'limited', 'unknown'] },
-    explanation: textJsonSchema,
-  },
+const providerFindingsJsonSchema = {
+  type: 'array',
+  maxItems: 5,
+  items: providerFindingJsonSchema,
 } as const;
 
-/**
- * Gemini's guide schema intentionally omits output limits, object closure, and
- * repeated evidence objects. The authoritative contract remains
- * opportunityDossierSchema below the deterministic mapping boundary.
- */
+/** Transport-only contract: simple types/cardinality, never domain refinements or UUID formats. */
 export const geminiProviderDossierJsonSchema = {
   type: 'object',
   required: [
@@ -333,263 +334,323 @@ export const geminiProviderDossierJsonSchema = {
     'researchTimestamp',
   ],
   properties: {
-    opportunitySummary: textJsonSchema,
+    opportunitySummary: { type: 'string' },
     company: {
       type: 'object',
-      required: [
-        'overview',
-        'categories',
-        'businessModel',
-        'stage',
-        'publicPrivateStatus',
-        'size',
-        'markets',
-        'engineeringContext',
-      ],
+      required: ['findings', 'unknowns'],
       properties: {
-        overview: textJsonSchema,
-        categories: {
-          type: 'array',
-          items: {
-            type: 'object',
-            required: ['label', 'confidence', 'sourceIds'],
-            properties: {
-              label: textJsonSchema,
-              confidence: evidenceJsonSchema.properties.classification,
-              sourceIds: providerEvidenceJsonSchema,
-            },
-          },
-        },
-        businessModel: textJsonSchema,
-        stage: textJsonSchema,
-        publicPrivateStatus: textJsonSchema,
-        size: textJsonSchema,
-        markets: { type: 'array', items: textJsonSchema },
-        engineeringContext: textJsonSchema,
+        findings: providerFindingsJsonSchema,
+        unknowns: { type: 'array', maxItems: 5, items: { type: 'string' } },
       },
     },
     companyMoment: {
       type: 'object',
-      required: ['knownFacts', 'recentDevelopments', 'inferences', 'unknowns'],
+      required: ['facts', 'inferences', 'unknowns'],
       properties: {
-        knownFacts: { type: 'array', items: textJsonSchema },
-        recentDevelopments: { type: 'array', items: textJsonSchema },
-        inferences: { type: 'array', items: textJsonSchema },
-        unknowns: { type: 'array', items: textJsonSchema },
+        facts: providerFindingsJsonSchema,
+        inferences: providerFindingsJsonSchema,
+        unknowns: { type: 'array', maxItems: 5, items: { type: 'string' } },
       },
     },
     compensation: {
       type: 'object',
       required: [
-        'observations',
+        'findings',
         'estimatedRange',
         'currencyUnit',
         'components',
         'confidence',
-        'conflicts',
         'unknowns',
       ],
       properties: {
-        observations: { type: 'array', items: textJsonSchema },
+        findings: providerFindingsJsonSchema,
         estimatedRange: { type: ['string', 'null'] },
         currencyUnit: { type: ['string', 'null'] },
-        components: { type: 'array', items: textJsonSchema },
+        components: { type: 'array', maxItems: 4, items: { type: 'string' } },
         confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
-        conflicts: { type: 'array', items: textJsonSchema },
-        unknowns: { type: 'array', items: textJsonSchema },
+        unknowns: { type: 'array', maxItems: 5, items: { type: 'string' } },
       },
     },
     hiringProcess: {
       type: 'object',
-      required: [
-        'officialKnownStages',
-        'anecdotalReportedStages',
-        'likelyExpectations',
-        'confidence',
-      ],
+      required: ['official', 'anecdotal', 'likely', 'confidence'],
       properties: {
-        officialKnownStages: { type: 'array', items: textJsonSchema },
-        anecdotalReportedStages: { type: 'array', items: textJsonSchema },
-        likelyExpectations: { type: 'array', items: textJsonSchema },
+        official: providerFindingsJsonSchema,
+        anecdotal: providerFindingsJsonSchema,
+        likely: providerFindingsJsonSchema,
         confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
       },
     },
     preparation: {
       type: 'object',
-      required: ['mustReview', 'shouldReview', 'optional', 'behavioral', 'companyKnowledge'],
-      properties: Object.fromEntries(
-        ['mustReview', 'shouldReview', 'optional', 'behavioral', 'companyKnowledge'].map((key) => [
-          key,
-          { type: 'array', items: providerTopicJsonSchema },
-        ]),
-      ),
+      required: ['technical', 'behavioral', 'company'],
+      properties: {
+        technical: providerFindingsJsonSchema,
+        behavioral: providerFindingsJsonSchema,
+        company: providerFindingsJsonSchema,
+      },
     },
     candidateFit: {
       type: 'object',
-      required: ['alreadyStrong', 'refresh', 'realGaps', 'unknowns'],
+      required: ['strengths', 'refresh', 'gaps', 'unknowns'],
       properties: {
-        alreadyStrong: { type: 'array', items: textJsonSchema },
-        refresh: { type: 'array', items: textJsonSchema },
-        realGaps: { type: 'array', items: textJsonSchema },
-        unknowns: { type: 'array', items: textJsonSchema },
+        strengths: { type: 'array', maxItems: 5, items: { type: 'string' } },
+        refresh: { type: 'array', maxItems: 5, items: { type: 'string' } },
+        gaps: { type: 'array', maxItems: 5, items: { type: 'string' } },
+        unknowns: { type: 'array', maxItems: 5, items: { type: 'string' } },
       },
     },
-    careerImpact: {
-      type: 'object',
-      required: [
-        'technicalGrowth',
-        'leadershipExposure',
-        'aiExposure',
-        'productExposure',
-        'internationalExposure',
-        'compensationUpside',
-        'roleScopeRisk',
-      ],
-      properties: Object.fromEntries(
-        [
-          'technicalGrowth',
-          'leadershipExposure',
-          'aiExposure',
-          'productExposure',
-          'internationalExposure',
-          'compensationUpside',
-          'roleScopeRisk',
-        ].map((key) => [key, providerImpactJsonSchema]),
-      ),
-    },
+    careerImpact: providerFindingsJsonSchema,
     applicationPositioning: {
       type: 'object',
-      required: ['emphasize', 'storiesToPrepare', 'evidenceToQuantify'],
+      required: ['emphasize', 'stories', 'evidence'],
       properties: {
-        emphasize: { type: 'array', items: textJsonSchema },
-        storiesToPrepare: { type: 'array', items: textJsonSchema },
-        evidenceToQuantify: { type: 'array', items: textJsonSchema },
+        emphasize: { type: 'array', maxItems: 5, items: { type: 'string' } },
+        stories: { type: 'array', maxItems: 5, items: { type: 'string' } },
+        evidence: { type: 'array', maxItems: 5, items: { type: 'string' } },
       },
     },
-    questionsToInvestigate: { type: 'array', items: textJsonSchema },
-    citations: providerEvidenceJsonSchema,
-    researchTimestamp: textJsonSchema,
+    questionsToInvestigate: { type: 'array', maxItems: 6, items: { type: 'string' } },
+    citations: { type: 'array', maxItems: 10, items: { type: 'string' } },
+    researchTimestamp: { type: 'string' },
   },
 } as const;
 
-const providerEvidence = z.array(z.string().uuid());
-const providerTopic = z.object({ topic: z.string(), why: z.string(), sourceIds: providerEvidence });
-const providerImpact = z.object({
-  level: z.enum(['strong', 'moderate', 'limited', 'unknown']),
-  explanation: z.string(),
-});
+type ProviderSchemaSection = keyof typeof geminiProviderDossierJsonSchema.properties;
+const providerSchemaSections = geminiProviderDossierJsonSchema.properties as Record<
+  ProviderSchemaSection,
+  Record<string, unknown>
+>;
+function providerSchemaFor(sections: readonly ProviderSchemaSection[]) {
+  return {
+    type: 'object',
+    required: [...sections],
+    properties: Object.fromEntries(
+      sections.map((section) => [section, providerSchemaSections[section]]),
+    ),
+  } as const;
+}
+
+export const COMPANY_INTELLIGENCE_PROVIDER_DTO_VERSION = '1';
+export const CANDIDATE_INTELLIGENCE_PROVIDER_DTO_VERSION = '1';
+export const companyIntelligenceProviderJsonSchema = providerSchemaFor([
+  'opportunitySummary',
+  'company',
+  'companyMoment',
+  'compensation',
+  'hiringProcess',
+  'citations',
+]);
+export const candidateIntelligenceProviderJsonSchema = providerSchemaFor([
+  'preparation',
+  'candidateFit',
+  'careerImpact',
+  'applicationPositioning',
+  'questionsToInvestigate',
+  'citations',
+]);
 
 export const geminiProviderDossierSchema = z.object({
   opportunitySummary: z.string(),
-  company: z.object({
-    overview: z.string(),
-    categories: z.array(
-      z.object({
-        label: z.string(),
-        confidence: evidence.shape.classification,
-        sourceIds: providerEvidence,
-      }),
-    ),
-    businessModel: z.string(),
-    stage: z.string(),
-    publicPrivateStatus: z.string(),
-    size: z.string(),
-    markets: z.array(z.string()),
-    engineeringContext: z.string(),
-  }),
+  company: z.object({ findings: providerFindings, unknowns: z.array(z.string()).max(5) }),
   companyMoment: z.object({
-    knownFacts: z.array(z.string()),
-    recentDevelopments: z.array(z.string()),
-    inferences: z.array(z.string()),
-    unknowns: z.array(z.string()),
+    facts: providerFindings,
+    inferences: providerFindings,
+    unknowns: z.array(z.string()).max(5),
   }),
   compensation: z.object({
-    observations: z.array(z.string()),
+    findings: providerFindings,
     estimatedRange: z.string().nullable(),
     currencyUnit: z.string().nullable(),
-    components: z.array(z.string()),
+    components: z.array(z.string()).max(4),
     confidence: z.enum(['low', 'medium', 'high']),
-    conflicts: z.array(z.string()),
-    unknowns: z.array(z.string()),
+    unknowns: z.array(z.string()).max(5),
   }),
   hiringProcess: z.object({
-    officialKnownStages: z.array(z.string()),
-    anecdotalReportedStages: z.array(z.string()),
-    likelyExpectations: z.array(z.string()),
+    official: providerFindings,
+    anecdotal: providerFindings,
+    likely: providerFindings,
     confidence: z.enum(['low', 'medium', 'high']),
   }),
   preparation: z.object({
-    mustReview: z.array(providerTopic),
-    shouldReview: z.array(providerTopic),
-    optional: z.array(providerTopic),
-    behavioral: z.array(providerTopic),
-    companyKnowledge: z.array(providerTopic),
+    technical: providerFindings,
+    behavioral: providerFindings,
+    company: providerFindings,
   }),
   candidateFit: z.object({
-    alreadyStrong: z.array(z.string()),
-    refresh: z.array(z.string()),
-    realGaps: z.array(z.string()),
-    unknowns: z.array(z.string()),
+    strengths: z.array(z.string()).max(5),
+    refresh: z.array(z.string()).max(5),
+    gaps: z.array(z.string()).max(5),
+    unknowns: z.array(z.string()).max(5),
   }),
-  careerImpact: z.object({
-    technicalGrowth: providerImpact,
-    leadershipExposure: providerImpact,
-    aiExposure: providerImpact,
-    productExposure: providerImpact,
-    internationalExposure: providerImpact,
-    compensationUpside: providerImpact,
-    roleScopeRisk: providerImpact,
-  }),
+  careerImpact: providerFindings,
   applicationPositioning: z.object({
-    emphasize: z.array(z.string()),
-    storiesToPrepare: z.array(z.string()),
-    evidenceToQuantify: z.array(z.string()),
+    emphasize: z.array(z.string()).max(5),
+    stories: z.array(z.string()).max(5),
+    evidence: z.array(z.string()).max(5),
   }),
-  questionsToInvestigate: z.array(z.string()),
-  citations: providerEvidence,
+  questionsToInvestigate: z.array(z.string()).max(6),
+  citations: z.array(z.string()).max(10),
   researchTimestamp: z.string(),
 });
-
+export const companyIntelligenceProviderSchema = geminiProviderDossierSchema.pick({
+  opportunitySummary: true,
+  company: true,
+  companyMoment: true,
+  compensation: true,
+  hiringProcess: true,
+  citations: true,
+});
+export const candidateIntelligenceProviderSchema = geminiProviderDossierSchema.pick({
+  preparation: true,
+  candidateFit: true,
+  careerImpact: true,
+  applicationPositioning: true,
+  questionsToInvestigate: true,
+  citations: true,
+});
 type GeminiProviderDossier = z.output<typeof geminiProviderDossierSchema>;
+type CompanyIntelligenceProviderDossier = z.output<typeof companyIntelligenceProviderSchema>;
+type CandidateIntelligenceProviderDossier = z.output<typeof candidateIntelligenceProviderSchema>;
 type DossierEvidence = z.output<typeof evidence>;
-
 export function mapGeminiProviderDossier(
   dossier: GeminiProviderDossier,
   sourceClassifications: ReadonlyMap<string, DossierEvidence['classification']>,
 ) {
-  const evidenceFor = (sourceIds: string[]) => {
-    const references = sourceIds.map((sourceId) => {
+  const refs = (ids: string[]) => {
+    const values = ids.map((sourceId) => {
       const classification = sourceClassifications.get(sourceId);
-      return classification ? { sourceId, classification } : undefined;
+      return classification ? { sourceId, classification } : null;
     });
-    return references.every((reference): reference is DossierEvidence => reference !== undefined)
-      ? references
-      : null;
+    return values.every((value): value is DossierEvidence => value !== null) ? values : null;
   };
-  const citations = evidenceFor(dossier.citations);
+  const citations = refs(dossier.citations);
   if (!citations) return null;
-  const categories = dossier.company.categories.map((category) => {
-    const references = evidenceFor(category.sourceIds);
-    return references ? { ...category, evidence: references } : null;
+  const findings = (items: typeof dossier.company.findings) =>
+    items
+      .map((item) => ({ item, evidence: refs(item.sourceIds) }))
+      .every((value) => value.evidence !== null)
+      ? items
+      : null;
+  const allFindings = [
+    dossier.company.findings,
+    dossier.companyMoment.facts,
+    dossier.companyMoment.inferences,
+    dossier.compensation.findings,
+    dossier.hiringProcess.official,
+    dossier.hiringProcess.anecdotal,
+    dossier.hiringProcess.likely,
+    dossier.preparation.technical,
+    dossier.preparation.behavioral,
+    dossier.preparation.company,
+    dossier.careerImpact,
+  ];
+  if (allFindings.some((items) => !findings(items))) return null;
+  const topic = (item: (typeof dossier.preparation.technical)[number]) => ({
+    topic: item.text,
+    why: item.text,
+    evidence: refs(item.sourceIds)!,
   });
-  if (categories.some((category) => category === null)) return null;
-  const preparation = Object.fromEntries(
-    Object.entries(dossier.preparation).map(([key, topics]) => [
-      key,
-      topics.map((topic) => {
-        const references = evidenceFor(topic.sourceIds);
-        return references ? { topic: topic.topic, why: topic.why, evidence: references } : null;
-      }),
-    ]),
-  );
-  if (Object.values(preparation).some((topics) => topics.some((topic) => topic === null)))
-    return null;
+  const impactKeys = [
+    'technicalGrowth',
+    'leadershipExposure',
+    'aiExposure',
+    'productExposure',
+    'internationalExposure',
+    'compensationUpside',
+    'roleScopeRisk',
+  ] as const;
+  const firstImpact = dossier.careerImpact[0];
+  const defaultImpact = { level: 'unknown' as const, explanation: 'No provider finding.' };
   return {
-    ...dossier,
-    company: { ...dossier.company, categories },
-    preparation,
+    opportunitySummary: dossier.opportunitySummary,
+    company: {
+      overview: dossier.company.findings.map((x) => x.text).join(' ') || 'Unknown.',
+      categories: dossier.company.findings.map((x) => ({
+        label: x.text,
+        confidence: sourceClassifications.get(x.sourceIds[0] ?? '') ?? 'unknown',
+        evidence: refs(x.sourceIds)!,
+      })),
+      businessModel: 'Unknown.',
+      stage: 'Unknown.',
+      publicPrivateStatus: 'Unknown.',
+      size: 'Unknown.',
+      markets: [],
+      engineeringContext: 'Unknown.',
+    },
+    companyMoment: {
+      knownFacts: dossier.companyMoment.facts.map((x) => x.text),
+      recentDevelopments: [],
+      inferences: dossier.companyMoment.inferences.map((x) => x.text),
+      unknowns: dossier.companyMoment.unknowns,
+    },
+    compensation: {
+      observations: dossier.compensation.findings.map((x) => x.text),
+      estimatedRange: dossier.compensation.estimatedRange,
+      currencyUnit: dossier.compensation.currencyUnit,
+      components: dossier.compensation.components,
+      confidence: dossier.compensation.confidence,
+      conflicts: [],
+      unknowns: dossier.compensation.unknowns,
+    },
+    hiringProcess: {
+      officialKnownStages: dossier.hiringProcess.official.map((x) => x.text),
+      anecdotalReportedStages: dossier.hiringProcess.anecdotal.map((x) => x.text),
+      likelyExpectations: dossier.hiringProcess.likely.map((x) => x.text),
+      confidence: dossier.hiringProcess.confidence,
+    },
+    preparation: {
+      mustReview: dossier.preparation.technical.map(topic),
+      shouldReview: [],
+      optional: [],
+      behavioral: dossier.preparation.behavioral.map(topic),
+      companyKnowledge: dossier.preparation.company.map(topic),
+    },
+    candidateFit: {
+      alreadyStrong: dossier.candidateFit.strengths,
+      refresh: dossier.candidateFit.refresh,
+      realGaps: dossier.candidateFit.gaps,
+      unknowns: dossier.candidateFit.unknowns,
+    },
+    careerImpact: Object.fromEntries(
+      impactKeys.map((key) => [
+        key,
+        firstImpact
+          ? {
+              level:
+                firstImpact.confidence === 'high'
+                  ? 'strong'
+                  : firstImpact.confidence === 'medium'
+                    ? 'moderate'
+                    : 'limited',
+              explanation: firstImpact.text,
+            }
+          : defaultImpact,
+      ]),
+    ),
+    applicationPositioning: {
+      emphasize: dossier.applicationPositioning.emphasize,
+      storiesToPrepare: dossier.applicationPositioning.stories,
+      evidenceToQuantify: dossier.applicationPositioning.evidence,
+    },
+    questionsToInvestigate: dossier.questionsToInvestigate,
     citations,
+    researchTimestamp: dossier.researchTimestamp,
   };
+}
+
+/** Server-owned merge: DTO sections are disjoint; citations are deduplicated before validation. */
+export function mergeGeminiProviderIntelligence(
+  company: CompanyIntelligenceProviderDossier,
+  candidate: CandidateIntelligenceProviderDossier,
+  researchTimestamp: string,
+) {
+  return geminiProviderDossierSchema.parse({
+    ...company,
+    ...candidate,
+    citations: [...new Set([...company.citations, ...candidate.citations])],
+    researchTimestamp,
+  });
 }
 
 export type GeminiSchemaComplexity = {
@@ -600,6 +661,24 @@ export type GeminiSchemaComplexity = {
   enumCount: number;
   arraySchemaCount: number;
 };
+
+/** Internal regression guardrails, deliberately not presented as Gemini API limits. */
+export const GEMINI_PROVIDER_SCHEMA_BUDGET = {
+  maxSerializedBytes: 6_000,
+  maxDepth: 6,
+  maxPropertyCount: 75,
+} as const;
+
+export function assertGeminiProviderSchemaBudget(schema: unknown) {
+  const metrics = geminiSchemaComplexity(schema);
+  if (
+    metrics.serializedBytes > GEMINI_PROVIDER_SCHEMA_BUDGET.maxSerializedBytes ||
+    metrics.maxDepth > GEMINI_PROVIDER_SCHEMA_BUDGET.maxDepth ||
+    metrics.propertyCount > GEMINI_PROVIDER_SCHEMA_BUDGET.maxPropertyCount
+  )
+    throw new Error('Gemini provider schema exceeds the internal complexity budget.');
+  return metrics;
+}
 
 export function geminiSchemaComplexity(schema: unknown): GeminiSchemaComplexity {
   const metrics: GeminiSchemaComplexity = {
@@ -716,6 +795,17 @@ export function findUnsupportedGeminiJsonSchemaKeywords(schema: unknown): string
   const unsupported = Object.keys(node).filter((key) => !geminiJsonSchemaKeywords.has(key));
   const nested = [
     ...(node.items ? findUnsupportedGeminiJsonSchemaKeywords(node.items) : []),
+    ...(node.$defs && typeof node.$defs === 'object' && !Array.isArray(node.$defs)
+      ? Object.values(node.$defs as Record<string, unknown>).flatMap(
+          findUnsupportedGeminiJsonSchemaKeywords,
+        )
+      : []),
+    ...(Array.isArray(node.anyOf)
+      ? node.anyOf.flatMap(findUnsupportedGeminiJsonSchemaKeywords)
+      : []),
+    ...(Array.isArray(node.oneOf)
+      ? node.oneOf.flatMap(findUnsupportedGeminiJsonSchemaKeywords)
+      : []),
     ...(node.properties && typeof node.properties === 'object'
       ? Object.values(node.properties as Record<string, unknown>).flatMap(
           findUnsupportedGeminiJsonSchemaKeywords,

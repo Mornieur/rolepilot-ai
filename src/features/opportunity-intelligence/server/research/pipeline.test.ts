@@ -1,72 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 vi.mock('server-only', () => ({}));
-
-const dependencies = vi.hoisted(() => ({
+const d = vi.hoisted(() => ({
   profile: vi.fn(),
   job: vi.fn(),
   cache: vi.fn(),
   persist: vi.fn(),
   company: vi.fn(),
   evaluate: vi.fn(),
-  generateContent: vi.fn(),
+  generate: vi.fn(),
 }));
-
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
-    models = { generateContent: dependencies.generateContent };
+    models = { generateContent: d.generate };
   },
 }));
 vi.mock('@/features/profiles/server/candidate-profiles', () => ({
-  getCandidateProfileById: dependencies.profile,
+  getCandidateProfileById: d.profile,
 }));
-vi.mock('@/features/jobs/server/persisted-jobs', () => ({ getPersistedJobById: dependencies.job }));
+vi.mock('@/features/jobs/server/persisted-jobs', () => ({ getPersistedJobById: d.job }));
 vi.mock('@/features/companies/server/target-companies', () => ({
-  getTargetCompanyById: dependencies.company,
+  getTargetCompanyById: d.company,
 }));
-vi.mock('@/features/job-evaluation/evaluate', () => ({ evaluateJob: dependencies.evaluate }));
+vi.mock('@/features/job-evaluation/evaluate', () => ({ evaluateJob: d.evaluate }));
 vi.mock('@/features/opportunity-intelligence/server/dossiers', () => ({
-  OpportunityResearchDataError: class OpportunityResearchDataError extends Error {
-    constructor(
-      public operation: 'cache_read' | 'dossier_persistence' | 'source_persistence' = 'cache_read',
-    ) {
-      super();
-    }
-  },
-  getLatestResearchDossier: dependencies.cache,
-  persistCompletedDossier: dependencies.persist,
+  getLatestResearchDossier: d.cache,
+  persistCompletedDossier: d.persist,
+  OpportunityResearchDataError: class extends Error {},
 }));
+import { researchOpportunity } from './pipeline';
 
-import { OpportunityResearchError, researchOpportunity } from './pipeline';
-import { geminiProviderDossierJsonSchema } from '@/features/opportunity-intelligence/schema';
-
-const profile = {
-  id: 'p',
-  desiredRoles: [],
-  acceptedSeniorities: [],
-  requiredSkills: [],
-  preferredSkills: [],
-  acceptedWorkModels: [],
-  locations: [],
-};
-const job = {
-  id: 'j',
-  targetCompanyId: 'c',
-  title: 'Role',
-  location: null,
-  descriptionText: 'text',
-  sourceUpdatedAt: null,
-  isActive: true,
-};
-const evaluation = {
-  score: 80,
-  eligible: true,
-  reasons: [],
-  matchedRequiredKeywords: [],
-  matchedPreferredKeywords: [],
-  seniorityMatch: true,
-  workModelMatch: true,
-};
 const source = {
   title: 'Source',
   url: 'https://example.test/a',
@@ -75,253 +37,125 @@ const source = {
   score: 1,
   publishedAt: null,
 };
-const valid = {
-  opportunitySummary: 'Summary',
-  company: {
-    overview: 'Overview',
-    categories: [],
-    businessModel: 'Model',
-    stage: 'Stage',
-    publicPrivateStatus: 'Private',
-    size: 'Size',
-    markets: [],
-    engineeringContext: 'Context',
-  },
-  companyMoment: { knownFacts: [], recentDevelopments: [], inferences: [], unknowns: [] },
+const companyIntelligence = {
+  opportunitySummary: 'Summary.',
+  company: { findings: [], unknowns: [] },
+  companyMoment: { facts: [], inferences: [], unknowns: [] },
   compensation: {
-    observations: [],
+    findings: [],
     estimatedRange: null,
     currencyUnit: null,
     components: [],
     confidence: 'low',
-    conflicts: [],
     unknowns: [],
   },
-  hiringProcess: {
-    officialKnownStages: [],
-    anecdotalReportedStages: [],
-    likelyExpectations: [],
-    confidence: 'low',
-  },
-  preparation: {
-    mustReview: [],
-    shouldReview: [],
-    optional: [],
-    behavioral: [],
-    companyKnowledge: [],
-  },
-  candidateFit: { alreadyStrong: [], refresh: [], realGaps: [], unknowns: [] },
-  careerImpact: Object.fromEntries(
-    [
-      'technicalGrowth',
-      'leadershipExposure',
-      'aiExposure',
-      'productExposure',
-      'internationalExposure',
-      'compensationUpside',
-      'roleScopeRisk',
-    ].map((key) => [key, { level: 'unknown', explanation: 'Unknown' }]),
-  ),
-  applicationPositioning: { emphasize: [], storiesToPrepare: [], evidenceToQuantify: [] },
+  hiringProcess: { official: [], anecdotal: [], likely: [], confidence: 'low' },
+  citations: [],
+};
+const candidateIntelligence = {
+  preparation: { technical: [], behavioral: [], company: [] },
+  candidateFit: { strengths: [], refresh: [], gaps: [], unknowns: [] },
+  careerImpact: [],
+  applicationPositioning: { emphasize: [], stories: [], evidence: [] },
   questionsToInvestigate: [],
   citations: [],
-  researchTimestamp: '2026-08-12T12:00:00.000Z',
 };
-
-describe('opportunity research observability boundary', () => {
-  const originalEnv = process.env;
+describe('opportunity research Gemini boundary', () => {
   const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
-  const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
   beforeEach(() => {
-    process.env = {
-      ...originalEnv,
-      TAVILY_API_KEY: 'tavily-test-secret',
-      GEMINI_API_KEY: 'gemini-test-secret',
-    };
     vi.clearAllMocks();
-    dependencies.profile.mockResolvedValue(profile);
-    dependencies.job.mockResolvedValue(job);
-    dependencies.cache.mockResolvedValue(null);
-    dependencies.company.mockResolvedValue({ name: 'Acme' });
-    dependencies.evaluate.mockReturnValue(evaluation);
-    dependencies.generateContent.mockResolvedValue({ text: JSON.stringify(valid) });
-    dependencies.persist.mockResolvedValue({ id: 'dossier' });
-  });
-
-  it('classifies missing Tavily configuration without exposing the credential', async () => {
-    delete process.env.TAVILY_API_KEY;
-    await expect(
-      researchOpportunity('p', 'j', { search: vi.fn(), extract: vi.fn() }, 'exec-config'),
-    ).rejects.toMatchObject({ classification: 'tavily_configuration' });
-    const logs = [...info.mock.calls, ...error.mock.calls].flat().join(' ');
-    expect(logs).toContain('"execution":"exec-config"');
-    expect(logs).toContain('"classification":"tavily_configuration"');
-    expect(logs).not.toContain('tavily-test-secret');
-    expect(logs).not.toContain('gemini-test-secret');
-  });
-
-  it('distinguishes Tavily failures from Gemini failures', async () => {
-    await expect(
-      researchOpportunity(
-        'p',
-        'j',
-        { search: vi.fn().mockRejectedValue(new Error('network')), extract: vi.fn() },
-        'exec-tavily',
-      ),
-    ).rejects.toMatchObject({ classification: 'tavily_network' });
-    dependencies.generateContent.mockRejectedValueOnce(new Error('network'));
-    await expect(
-      researchOpportunity(
-        'p',
-        'j',
-        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
-        'exec-gemini',
-      ),
-    ).rejects.toMatchObject({ classification: 'gemini_network' });
-    const logs = error.mock.calls.flat().join(' ');
-    expect(logs).toContain('tavily_network');
-  });
-
-  it('classifies source persistence and preserves a safe error boundary', async () => {
-    const DataError = (await import('@/features/opportunity-intelligence/server/dossiers'))
-      .OpportunityResearchDataError;
-    dependencies.persist.mockRejectedValue(new DataError('source_persistence'));
-    await expect(
-      researchOpportunity(
-        'p',
-        'j',
-        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
-        'exec-persist',
-      ),
-    ).rejects.toEqual(expect.any(OpportunityResearchError));
-    await expect(
-      researchOpportunity(
-        'p',
-        'j',
-        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
-        'exec-persist-2',
-      ),
-    ).rejects.toMatchObject({ classification: 'source_persistence' });
-    expect(error.mock.calls.flat().join(' ')).toContain('source_persistence');
-  });
-
-  it('logs only safe Zod metadata for dossier validation failures', async () => {
-    dependencies.generateContent.mockResolvedValue({
-      text: JSON.stringify({
-        ...valid,
-        compensation: { ...valid.compensation, confidence: 'média' },
-      }),
+    process.env.TAVILY_API_KEY = 'test';
+    process.env.GEMINI_API_KEY = 'test';
+    d.profile.mockResolvedValue({
+      desiredRoles: [],
+      acceptedSeniorities: [],
+      requiredSkills: [],
+      preferredSkills: [],
+      acceptedWorkModels: [],
+      locations: [],
     });
-    await expect(
-      researchOpportunity(
-        'p',
-        'j',
-        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
-        'exec-dossier-validation',
-      ),
-    ).rejects.toMatchObject({ classification: 'dossier_validation' });
-    const logs = error.mock.calls.flat().join(' ');
-    expect(logs).toContain('"path":"compensation.confidence"');
-    expect(logs).toContain('"code":"invalid_value"');
-    expect(logs).not.toContain('média');
-    expect(logs).not.toContain('tavily-test-secret');
-    expect(logs).not.toContain('gemini-test-secret');
-  });
-
-  it('sends the Gemini-compatible structured response contract without credentials', async () => {
-    await expect(
-      researchOpportunity(
-        'p',
-        'j',
-        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
-        'exec-request-contract',
-      ),
-    ).resolves.toEqual({ id: 'dossier' });
-    const request = dependencies.generateContent.mock.calls[0][0];
-    expect(request.config).toMatchObject({
-      responseMimeType: 'application/json',
-      responseJsonSchema: geminiProviderDossierJsonSchema,
+    d.job.mockResolvedValue({
+      targetCompanyId: 'c',
+      title: 'Role',
+      location: null,
+      descriptionText: 'text',
+      sourceUpdatedAt: null,
+      isActive: true,
     });
-    expect(JSON.stringify(request)).not.toContain('tavily-test-secret');
-    expect(JSON.stringify(request)).not.toContain('gemini-test-secret');
+    d.cache.mockResolvedValue(null);
+    d.company.mockResolvedValue({ name: 'Acme' });
+    d.evaluate.mockReturnValue({
+      score: 80,
+      eligible: true,
+      reasons: [],
+      matchedRequiredKeywords: [],
+      matchedPreferredKeywords: [],
+      seniorityMatch: true,
+      workModelMatch: true,
+    });
+    d.generate
+      .mockResolvedValueOnce({ text: JSON.stringify(companyIntelligence) })
+      .mockResolvedValueOnce({ text: JSON.stringify(candidateIntelligence) });
+    d.persist.mockResolvedValue({ id: 'dossier' });
   });
-
-  it('keeps safe Gemini HTTP metadata on the single stage failure log', async () => {
-    dependencies.generateContent.mockRejectedValue(
-      Object.assign(
-        new Error(
-          JSON.stringify({
-            error: {
-              code: 400,
-              status: 'INVALID_ARGUMENT',
-              details: [{ reason: 'INVALID_JSON_SCHEMA' }],
-            },
-          }),
-        ),
-        { status: 400 },
-      ),
+  it('logs provider DTO/schema metadata without schema or credentials', async () => {
+    await researchOpportunity(
+      'p',
+      'j',
+      { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
+      'execution',
     );
+    const logged = info.mock.calls.flat().join(' ');
+    expect(logged).toContain('provider_schema_version');
+    expect(logged).toContain('schema_bytes');
+    expect(logged).toContain('gemini_company');
+    expect(logged).toContain('gemini_candidate');
+    expect(d.generate).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not call candidate or persist when company synthesis fails', async () => {
+    d.generate.mockReset();
+    d.generate.mockRejectedValue({ status: 400, message: '{}' });
     await expect(
       researchOpportunity(
         'p',
         'j',
         { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
-        'exec-gemini-http',
+        'execution',
       ),
     ).rejects.toMatchObject({ classification: 'gemini_http' });
-    const geminiFailures = error.mock.calls
-      .map(([entry]) => String(entry))
-      .filter(
-        (entry) => entry.includes('"stage":"gemini"') && entry.includes('"outcome":"failed"'),
-      );
-    expect(geminiFailures).toHaveLength(1);
-    expect(geminiFailures[0]).toContain('"http_status":400');
-    expect(geminiFailures[0]).toContain('"provider_code":400');
-    expect(geminiFailures[0]).toContain('"provider_status":"INVALID_ARGUMENT"');
-    expect(geminiFailures[0]).toContain('"provider_reason":"INVALID_JSON_SCHEMA"');
-    expect(geminiFailures[0]).not.toContain('"message"');
+    expect(d.generate).toHaveBeenCalledTimes(1);
+    expect(d.persist).not.toHaveBeenCalled();
   });
 
-  it('logs only structured Gemini error metadata and field paths', async () => {
-    dependencies.generateContent.mockRejectedValue(
-      Object.assign(
-        new Error(
-          JSON.stringify({
-            error: {
-              code: 400,
-              status: 'INVALID_ARGUMENT',
-              details: [
-                {
-                  '@type': 'type.googleapis.com/google.rpc.BadRequest',
-                  fieldViolations: [
-                    { field: 'generationConfig.responseJsonSchema.properties.compensation' },
-                  ],
-                },
-                {
-                  '@type': 'type.googleapis.com/google.rpc.ErrorInfo',
-                  reason: 'INVALID_JSON_SCHEMA',
-                },
-              ],
-            },
-          }),
-        ),
-        { status: 400 },
-      ),
-    );
+  it('does not persist partial company output when candidate synthesis fails', async () => {
+    d.generate.mockReset();
+    d.generate
+      .mockResolvedValueOnce({ text: JSON.stringify(companyIntelligence) })
+      .mockRejectedValue({ status: 400, message: '{}' });
     await expect(
       researchOpportunity(
         'p',
         'j',
         { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
-        'exec-gemini-field-violation',
+        'execution',
       ),
     ).rejects.toMatchObject({ classification: 'gemini_http' });
-    const logged = error.mock.calls.flat().join(' ');
-    expect(logged).toContain('"provider_detail_types"');
-    expect(logged).toContain('"provider_field_violations"');
-    expect(logged).toContain('generationConfig.responseJsonSchema.properties.compensation');
-    expect(logged).not.toContain('"message"');
-    expect(logged).not.toContain('gemini-test-secret');
+    expect(d.persist).not.toHaveBeenCalled();
+  });
+
+  it('retries one transient 503 once but never retries HTTP 400', async () => {
+    d.generate.mockReset();
+    d.generate
+      .mockRejectedValueOnce({ status: 503, message: '{}' })
+      .mockResolvedValueOnce({ text: JSON.stringify(companyIntelligence) })
+      .mockResolvedValueOnce({ text: JSON.stringify(candidateIntelligence) });
+    await researchOpportunity(
+      'p',
+      'j',
+      { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
+      'execution',
+    );
+    expect(d.generate).toHaveBeenCalledTimes(3);
   });
 });

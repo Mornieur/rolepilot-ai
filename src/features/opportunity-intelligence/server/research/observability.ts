@@ -17,8 +17,11 @@ export type OpportunityResearchStage =
   | 'sanitization'
   | 'matching'
   | 'gemini_config'
-  | 'gemini'
-  | 'gemini_parse'
+  | 'gemini_company'
+  | 'gemini_candidate'
+  | 'gemini_company_parse'
+  | 'gemini_candidate_parse'
+  | 'dossier_merge'
   | 'dossier_validation'
   | 'citation_validation'
   | 'dossier_persistence'
@@ -69,6 +72,11 @@ export function logOpportunityResearch(input: {
   providerReason?: string;
   providerDetailTypes?: string[];
   providerFieldViolations?: string[];
+  providerSchemaVersion?: string;
+  providerDtoVersion?: string;
+  schemaBytes?: number;
+  schemaDepth?: number;
+  attempt?: number;
   issues?: { path: string; code: string; expected?: string; actual: string }[];
 }) {
   const entry = {
@@ -91,6 +99,13 @@ export function logOpportunityResearch(input: {
     ...(input.providerFieldViolations?.length
       ? { provider_field_violations: input.providerFieldViolations }
       : {}),
+    ...(input.providerSchemaVersion
+      ? { provider_schema_version: input.providerSchemaVersion }
+      : {}),
+    ...(input.providerDtoVersion ? { provider_dto_version: input.providerDtoVersion } : {}),
+    ...(input.schemaBytes !== undefined ? { schema_bytes: input.schemaBytes } : {}),
+    ...(input.schemaDepth !== undefined ? { schema_depth: input.schemaDepth } : {}),
+    ...(input.attempt !== undefined ? { attempt: input.attempt } : {}),
     ...(input.issues ? { issues: input.issues } : {}),
   };
   (input.outcome === 'failed' ? console.error : console.info)(JSON.stringify(entry));

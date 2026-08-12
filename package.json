@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "diagnose:gemini-contract": "node --experimental-strip-types scripts/diagnose-gemini-contract.ts"
   },
   "dependencies": {
     "@feitoza-ui/core": "^0.3.0",

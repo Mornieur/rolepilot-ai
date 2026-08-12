@@ -1,10 +1,10 @@
 # Opportunity Intelligence V1
 
-The canonical opportunity detail page is a decision and preparation workspace. Deterministic matching remains authoritative for eligibility, score and priority. Tavily retrieves bounded external evidence; Gemini performs one advisory synthesis and cannot change matching, decisions or notifications.
+The canonical opportunity detail page is a decision and preparation workspace. Deterministic matching remains authoritative for eligibility, score and priority. Tavily retrieves bounded external evidence once; Gemini performs Company Intelligence then Candidate/Application Intelligence, and cannot change matching, decisions or notifications.
 
 ## Retrieval and cost bounds
 
-An explicit user action performs at most six Tavily Search calls, selects at most ten sources and extracts at most four sources only when the search snippet is insufficient. There is no Tavily Research call, recursive follow-up, page-load research, collection research or Telegram research. One newly researched dossier uses at most one Gemini call. A fresh cached dossier is reused.
+An explicit user action performs at most six Tavily Search calls, selects at most ten sources and extracts at most four sources only when the search snippet is insufficient. There is no Tavily Research call, recursive follow-up, page-load research, collection research or Telegram research. One newly researched dossier uses two bounded sequential Gemini calls; a fresh cached dossier uses zero. A failure in either synthesis never persists a partial completed dossier.
 
 ## Evidence and uncertainty
 
