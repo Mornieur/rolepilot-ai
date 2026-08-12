@@ -9,6 +9,7 @@ const modules = [
   () => import('@/features/ai-job-analysis/actions'),
   () => import('@/features/job-collection/actions'),
   () => import('@/features/job-sources/greenhouse/actions'),
+  () => import('@/features/opportunity-intelligence/actions'),
 ];
 
 describe('dedicated use server modules', () => {

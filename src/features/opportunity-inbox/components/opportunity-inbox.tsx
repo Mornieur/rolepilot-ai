@@ -155,10 +155,10 @@ function OpportunityCard({
         <OpportunityActions opportunity={opportunity} onDecision={onDecision} />
         <div className="mt-4 flex flex-wrap gap-4 text-sm font-medium">
           <Link
-            href={`/jobs/evaluate?profileId=${encodeURIComponent(opportunity.profileId)}`}
+            href={`/opportunities/${encodeURIComponent(opportunity.job.id)}?profileId=${encodeURIComponent(opportunity.profileId)}`}
             className="text-sky-700 underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:text-cyan-300"
           >
-            Avaliar vaga
+            Ver oportunidade
           </Link>
           <a
             href={opportunity.job.originalUrl}
