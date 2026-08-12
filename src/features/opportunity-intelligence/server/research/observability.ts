@@ -78,6 +78,7 @@ export function logOpportunityResearch(input: {
   schemaDepth?: number;
   attempt?: number;
   issues?: { path: string; code: string; expected?: string; actual: string }[];
+  normalizationCounts?: Partial<Record<'companyCategoryLabel' | 'preparationTopic', number>>;
 }) {
   const entry = {
     event: 'opportunity_research',
@@ -107,6 +108,9 @@ export function logOpportunityResearch(input: {
     ...(input.schemaDepth !== undefined ? { schema_depth: input.schemaDepth } : {}),
     ...(input.attempt !== undefined ? { attempt: input.attempt } : {}),
     ...(input.issues ? { issues: input.issues } : {}),
+    ...(input.normalizationCounts && Object.keys(input.normalizationCounts).length
+      ? { normalization_counts: input.normalizationCounts }
+      : {}),
   };
   (input.outcome === 'failed' ? console.error : console.info)(JSON.stringify(entry));
 }

@@ -559,9 +559,15 @@ export async function researchOpportunity(
     );
     logOpportunityResearch({ execution, stage: 'dossier_merge', outcome: 'success' });
     activeStage = 'dossier_validation';
+    const normalizationCounts: Partial<
+      Record<'companyCategoryLabel' | 'preparationTopic', number>
+    > = {};
     const mapped = mapGeminiProviderDossier(
       providerMerged,
       new Map(sources.map((source) => [source.id, source.evidenceClassification])),
+      (category) => {
+        normalizationCounts[category] = (normalizationCounts[category] ?? 0) + 1;
+      },
     );
     if (!mapped) throw new OpportunityResearchError('citation_validation');
     const parsed = opportunityDossierSchema.safeParse(mapped);
@@ -569,7 +575,12 @@ export async function researchOpportunity(
       validationIssues = opportunityDossierValidationIssues(parsed.error, mapped);
       throw new OpportunityResearchError('dossier_validation');
     }
-    logOpportunityResearch({ execution, stage: 'dossier_validation', outcome: 'success' });
+    logOpportunityResearch({
+      execution,
+      stage: 'dossier_validation',
+      outcome: 'success',
+      normalizationCounts,
+    });
     activeStage = 'citation_validation';
     const ids = new Set(sources.map((source) => source.id));
     if (!hasOnlyKnownDossierCitations(parsed.data, ids))

@@ -513,9 +513,38 @@ type GeminiProviderDossier = z.output<typeof geminiProviderDossierSchema>;
 type CompanyIntelligenceProviderDossier = z.output<typeof companyIntelligenceProviderSchema>;
 type CandidateIntelligenceProviderDossier = z.output<typeof candidateIntelligenceProviderSchema>;
 type DossierEvidence = z.output<typeof evidence>;
+
+export const dossierPresentationLabelLimits = {
+  companyCategoryLabel: 80,
+  preparationTopic: 120,
+} as const;
+
+export type DossierNormalizationCategory = keyof typeof dossierPresentationLabelLimits;
+
+/**
+ * Shortens only display labels. It never slices a word: an unbreakable overlong
+ * value stays invalid so the authoritative domain contract can reject it.
+ */
+export function shortenDossierPresentationLabel(value: string, max: number) {
+  const trimmed = value.trim();
+  if (trimmed.length <= max) return { value, normalized: false };
+
+  const words = trimmed.split(/\s+/);
+  const shortened: string[] = [];
+  for (const word of words) {
+    const next = [...shortened, word].join(' ');
+    if (`${next}…`.length > max) break;
+    shortened.push(word);
+  }
+  return shortened.length
+    ? { value: `${shortened.join(' ')}…`, normalized: true }
+    : { value, normalized: false };
+}
+
 export function mapGeminiProviderDossier(
   dossier: GeminiProviderDossier,
   sourceClassifications: ReadonlyMap<string, DossierEvidence['classification']>,
+  onNormalization?: (category: DossierNormalizationCategory) => void,
 ) {
   const refs = (ids: string[]) => {
     const values = ids.map((sourceId) => {
@@ -547,10 +576,15 @@ export function mapGeminiProviderDossier(
   ];
   if (allFindings.some((items) => !findings(items))) return null;
   const topic = (item: (typeof dossier.preparation.technical)[number]) => ({
-    topic: item.text,
+    topic: normalizedLabel(item.text, 'preparationTopic'),
     why: item.text,
     evidence: refs(item.sourceIds)!,
   });
+  function normalizedLabel(value: string, category: DossierNormalizationCategory) {
+    const result = shortenDossierPresentationLabel(value, dossierPresentationLabelLimits[category]);
+    if (result.normalized) onNormalization?.(category);
+    return result.value;
+  }
   const impactKeys = [
     'technicalGrowth',
     'leadershipExposure',
@@ -567,7 +601,7 @@ export function mapGeminiProviderDossier(
     company: {
       overview: dossier.company.findings.map((x) => x.text).join(' ') || 'Unknown.',
       categories: dossier.company.findings.map((x) => ({
-        label: x.text,
+        label: normalizedLabel(x.text, 'companyCategoryLabel'),
         confidence: sourceClassifications.get(x.sourceIds[0] ?? '') ?? 'unknown',
         evidence: refs(x.sourceIds)!,
       })),

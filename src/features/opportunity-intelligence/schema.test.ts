@@ -13,6 +13,7 @@ import {
   mapGeminiProviderDossier,
   mergeGeminiProviderIntelligence,
   opportunityDossierSchema,
+  shortenDossierPresentationLabel,
 } from './schema';
 
 const sourceId = '11111111-1111-4111-8111-111111111111';
@@ -114,5 +115,113 @@ describe('Gemini provider DTO boundary', () => {
         compensation: { ...provider.compensation, estimatedRange: {} },
       }).success,
     ).toBe(false);
+  });
+
+  it('shortens presentation labels at word boundaries without changing factual text', () => {
+    const exact = 'a'.repeat(80);
+    expect(shortenDossierPresentationLabel(exact, 80)).toEqual({ value: exact, normalized: false });
+    expect(shortenDossierPresentationLabel('a'.repeat(120), 120)).toEqual({
+      value: 'a'.repeat(120),
+      normalized: false,
+    });
+    expect(shortenDossierPresentationLabel('a'.repeat(81), 80).normalized).toBe(false);
+    expect(shortenDossierPresentationLabel('a'.repeat(121), 120).normalized).toBe(false);
+    expect(shortenDossierPresentationLabel('palavra '.repeat(50), 80)).toMatchObject({
+      normalized: true,
+    });
+    expect(shortenDossierPresentationLabel('Produto financeiro para empresas', 20)).toEqual({
+      value: 'Produto financeiro…',
+      normalized: true,
+    });
+    expect(
+      shortenDossierPresentationLabel('Pesquisa com português e ação para clientes', 28),
+    ).toEqual({
+      value: 'Pesquisa com português e…',
+      normalized: true,
+    });
+    expect(shortenDossierPresentationLabel('x'.repeat(81), 80)).toEqual({
+      value: 'x'.repeat(81),
+      normalized: false,
+    });
+  });
+
+  it('normalizes every approved provider label while preserving citations and full topic rationale', () => {
+    const category =
+      'Categoria estratégica de plataforma para clientes empresariais globais regulados de alto crescimento';
+    const topic =
+      'Preparação aprofundada sobre arquitetura distribuída, confiabilidade e decisões técnicas para entrevistas de sistemas complexos';
+    const normalized: string[] = [];
+    const mapped = mapGeminiProviderDossier(
+      geminiProviderDossierSchema.parse({
+        ...provider,
+        company: { findings: [{ ...finding, text: category }], unknowns: [] },
+        preparation: {
+          technical: [{ ...finding, text: topic }],
+          behavioral: [{ ...finding, text: topic }],
+          company: [{ ...finding, text: topic }],
+        },
+      }),
+      new Map([[sourceId, 'known' as const]]),
+      (field) => normalized.push(field),
+    );
+    const dossier = opportunityDossierSchema.parse(mapped);
+    expect(dossier.company.categories[0]?.label.length).toBeLessThanOrEqual(80);
+    expect(dossier.preparation.mustReview[0]?.topic.length).toBeLessThanOrEqual(120);
+    expect(dossier.preparation.behavioral[0]?.topic.length).toBeLessThanOrEqual(120);
+    expect(dossier.preparation.companyKnowledge[0]?.topic.length).toBeLessThanOrEqual(120);
+    expect(dossier.preparation.mustReview[0]?.why).toBe(topic);
+    expect(dossier.citations).toEqual([{ sourceId, classification: 'known' }]);
+    expect(normalized).toEqual([
+      'companyCategoryLabel',
+      'preparationTopic',
+      'preparationTopic',
+      'preparationTopic',
+    ]);
+
+    const unnormalizedLabels = {
+      ...dossier,
+      company: {
+        ...dossier.company,
+        categories: [{ ...dossier.company.categories[0]!, label: category }],
+      },
+      preparation: {
+        ...dossier.preparation,
+        mustReview: [{ ...dossier.preparation.mustReview[0]!, topic }],
+        behavioral: [{ ...dossier.preparation.behavioral[0]!, topic }],
+        companyKnowledge: [{ ...dossier.preparation.companyKnowledge[0]!, topic }],
+      },
+    };
+    expect(opportunityDossierSchema.safeParse(unnormalizedLabels).success).toBe(false);
+  });
+
+  it('keeps non-presentation and unbreakable semantic violations fail-fast', () => {
+    const longCompensation = geminiProviderDossierSchema.parse({
+      ...provider,
+      compensation: { ...provider.compensation, estimatedRange: 'R$ '.repeat(54) },
+    });
+    const mappedCompensation = mapGeminiProviderDossier(
+      longCompensation,
+      new Map([[sourceId, 'known' as const]]),
+    );
+    expect(opportunityDossierSchema.safeParse(mappedCompensation).success).toBe(false);
+
+    const unbreakableCategory = geminiProviderDossierSchema.parse({
+      ...provider,
+      company: { findings: [{ ...finding, text: 'x'.repeat(81) }], unknowns: [] },
+    });
+    const mappedCategory = mapGeminiProviderDossier(
+      unbreakableCategory,
+      new Map([[sourceId, 'known' as const]]),
+    );
+    expect(opportunityDossierSchema.safeParse(mappedCategory).success).toBe(false);
+    expect(
+      mapGeminiProviderDossier(
+        geminiProviderDossierSchema.parse({
+          ...provider,
+          citations: ['citation-id-must-not-change'],
+        }),
+        new Map([[sourceId, 'known' as const]]),
+      ),
+    ).toBeNull();
   });
 });
