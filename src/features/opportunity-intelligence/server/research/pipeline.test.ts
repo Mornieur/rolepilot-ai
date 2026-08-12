@@ -111,6 +111,7 @@ describe('opportunity research Gemini boundary', () => {
     expect(logged).toContain('gemini_company');
     expect(logged).toContain('gemini_candidate');
     expect(d.generate).toHaveBeenCalledTimes(2);
+    expect(d.generate.mock.calls[0]?.[0].config.systemInstruction).toContain('pt-BR');
   });
 
   it('does not call candidate or persist when company synthesis fails', async () => {
@@ -157,5 +158,33 @@ describe('opportunity research Gemini boundary', () => {
       'execution',
     );
     expect(d.generate).toHaveBeenCalledTimes(3);
+  });
+
+  it('returns a fresh dossier from cache without Tavily or either Gemini subcall', async () => {
+    let cached: { status: 'completed'; researchFingerprint: string; expiresAt: string } | null =
+      null;
+    d.persist.mockImplementation(async ({ researchFingerprint }) => {
+      cached = {
+        status: 'completed',
+        researchFingerprint,
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      };
+      return cached;
+    });
+    const provider = {
+      search: vi.fn().mockResolvedValue([source]),
+      extract: vi.fn().mockResolvedValue([]),
+    };
+    await researchOpportunity('p', 'j', provider, 'first');
+    d.cache.mockResolvedValue(cached);
+    d.generate.mockClear();
+    provider.search.mockClear();
+    provider.extract.mockClear();
+
+    await researchOpportunity('p', 'j', provider, 'reload');
+
+    expect(provider.search).not.toHaveBeenCalled();
+    expect(provider.extract).not.toHaveBeenCalled();
+    expect(d.generate).not.toHaveBeenCalled();
   });
 });

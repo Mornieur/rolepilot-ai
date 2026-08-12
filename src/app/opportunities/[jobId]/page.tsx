@@ -12,6 +12,8 @@ import { evaluateJob } from '@/features/job-evaluation/evaluate';
 import { getLatestResearchDossier } from '@/features/opportunity-intelligence/server/dossiers';
 import { OpportunityDossierView } from '@/features/opportunity-intelligence/components/opportunity-dossier';
 import { ResearchTrigger } from '@/features/opportunity-intelligence/components/research-trigger';
+import { isNewOpportunity } from '@/features/opportunity-inbox/inbox';
+import { jobDecisionLabels } from '@/features/job-actions/status-presentation';
 export const dynamic = 'force-dynamic';
 export default async function OpportunityPage({
   params,
@@ -82,7 +84,8 @@ export default async function OpportunityPage({
           <Badge variant={evaluation.score >= 80 ? 'success' : 'primary'}>
             {evaluation.score >= 80 ? 'Excelente' : evaluation.score >= 70 ? 'Boa' : 'Revisar'}
           </Badge>
-          <Badge variant="neutral">{decision.status}</Badge>
+          {isNewOpportunity(job, new Date()) && <Badge variant="info">Nova</Badge>}
+          <Badge variant="neutral">{jobDecisionLabels[decision.status]}</Badge>
           {job.isActive === false && <Badge variant="warning">Encerrada</Badge>}
         </div>
         <Card className="mt-6 p-5">

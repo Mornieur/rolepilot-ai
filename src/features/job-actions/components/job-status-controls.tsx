@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { Button } from '@feitoza-ui/core';
 import { saveJobStatusAction } from '@/features/job-actions/actions';
 import { initialJobStatusActionState } from '@/features/job-actions/action-state';
+import { jobDecisionLabels } from '@/features/job-actions/status-presentation';
 
 export function JobStatusControls({
   profileId,
@@ -29,13 +30,6 @@ export function JobStatusControls({
     applied: 'Candidatada',
     rejected: 'Rejeitada',
   } as const;
-  const stateLabels = {
-    new: 'nova',
-    saved: 'salva',
-    ignored: 'ignorada',
-    applied: 'candidatada',
-    rejected: 'rejeitada',
-  } as const;
   const pendingLabels = {
     saved: 'Salvando…',
     ignored: 'Ignorando…',
@@ -48,7 +42,7 @@ export function JobStatusControls({
       <input type="hidden" name="jobId" value={jobId} />
       <h4 className="text-sm font-semibold">Sua decisão</h4>
       <p className="mt-1 text-sm" role="status">
-        Estado atual: {stateLabels[current as keyof typeof stateLabels] ?? current}
+        Estado atual: {jobDecisionLabels[current as keyof typeof jobDecisionLabels] ?? current}
       </p>
       <div className="mt-2 flex flex-wrap gap-2" aria-label="Sua decisão">
         {['saved', 'ignored', 'applied', 'rejected'].map((status) => (

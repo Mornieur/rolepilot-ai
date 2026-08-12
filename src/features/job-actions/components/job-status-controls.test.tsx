@@ -36,7 +36,7 @@ describe('JobStatusControls', () => {
 
   it('shows the current status with accessible action buttons and pressed state', () => {
     render(<JobStatusControls profileId="profile" jobId="job" currentStatus="applied" />);
-    expect(screen.getByRole('status')).toHaveTextContent('Estado atual: candidatada');
+    expect(screen.getByRole('status')).toHaveTextContent('Estado atual: Candidatada');
     expect(screen.getByRole('button', { name: 'Candidatada' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -57,7 +57,7 @@ describe('JobStatusControls', () => {
     ui.state = { status: 'success', current: 'saved', message: 'Decisão salva.' };
     rerender(<JobStatusControls profileId="profile" jobId="job" />);
     expect(screen.getByText('Decisão salva.')).toBeInTheDocument();
-    expect(screen.getAllByRole('status')[0]).toHaveTextContent('Estado atual: salva');
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('Estado atual: Salva');
     expect(screen.getByRole('button', { name: '✓ Salva' })).toHaveAttribute('aria-pressed', 'true');
 
     ui.state = { status: 'error', message: 'Não foi possível salvar a decisão.' };
