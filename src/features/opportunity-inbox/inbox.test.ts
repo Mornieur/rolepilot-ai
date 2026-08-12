@@ -53,7 +53,7 @@ describe('Opportunity Inbox semantics', () => {
       decision: 'saved',
       companyName: 'Acme',
       priority: 'excellent',
-      isNew: false,
+      isNew: true,
     });
   });
   it('sorts priority groups, then newest discovery, title, and id deterministically', () => {
@@ -72,19 +72,38 @@ describe('Opportunity Inbox semantics', () => {
     expect(priorityForScore(70)).toBe('good');
     expect(priorityForScore(69)).toBe('review');
   });
-  it('maps summary counts and builds explanations strictly from deterministic evidence', () => {
+  it('counts recent opportunities in the new summary independently from decision state', () => {
+    const opportunities = buildInboxOpportunities({
+      profile,
+      jobs: [
+        job('recent-undecided', 'Senior Frontend Engineer', '2026-08-11T11:00:00Z'),
+        job('recent-saved', 'Senior Frontend Engineer', '2026-08-11T10:00:00Z'),
+        job('old-undecided', 'Senior Frontend Engineer', '2026-08-10T10:00:00Z'),
+      ],
+      companyNames: new Map(),
+      statuses: { 'recent-saved': 'saved' },
+      now: new Date('2026-08-11T12:00:00Z'),
+    });
+    expect(summarizeInbox(opportunities)).toEqual({
+      compatible: 3,
+      new: 2,
+      saved: 1,
+      excellent: 3,
+    });
+    expect(
+      opportunities.find((opportunity) => opportunity.job.id === 'old-undecided'),
+    ).toMatchObject({
+      decision: 'new',
+      isNew: false,
+    });
+  });
+  it('builds explanations strictly from deterministic evidence', () => {
     const opportunities = buildInboxOpportunities({
       profile,
       jobs: [job('one', 'Senior Frontend Engineer', '2026-08-11T11:00:00Z')],
       companyNames: new Map(),
       statuses: {},
       now: new Date('2026-08-11T12:00:00Z'),
-    });
-    expect(summarizeInbox(opportunities)).toEqual({
-      compatible: 1,
-      new: 1,
-      saved: 0,
-      excellent: 1,
     });
     expect(whyMatches(opportunities[0])).toContain('react, typescript');
     expect(whyMatches(opportunities[0])).toContain('senioridade próxima ao perfil');

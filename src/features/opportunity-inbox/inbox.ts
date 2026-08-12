@@ -10,17 +10,9 @@ export function priorityForScore(score: number): OpportunityPriority {
   return 'review';
 }
 
-export function isNewOpportunity(
-  job: Pick<PersistedJob, 'firstSeenAt'>,
-  decision: JobUserStatus,
-  now: Date,
-) {
+export function isNewOpportunity(job: Pick<PersistedJob, 'firstSeenAt'>, now: Date) {
   const firstSeenAt = new Date(job.firstSeenAt).getTime();
-  return (
-    decision === 'new' &&
-    Number.isFinite(firstSeenAt) &&
-    now.getTime() - firstSeenAt <= inboxNewWindowMs
-  );
+  return Number.isFinite(firstSeenAt) && now.getTime() - firstSeenAt <= inboxNewWindowMs;
 }
 
 const priorityOrder: Record<OpportunityPriority, number> = { excellent: 0, good: 1, review: 2 };
@@ -50,7 +42,7 @@ export function buildInboxOpportunities({
         companyName: companyNames.get(evaluation.job.targetCompanyId) ?? 'Empresa não identificada',
         decision,
         priority: priorityForScore(evaluation.score),
-        isNew: isNewOpportunity(evaluation.job, decision, now),
+        isNew: isNewOpportunity(evaluation.job, now),
       };
     })
     .sort(
