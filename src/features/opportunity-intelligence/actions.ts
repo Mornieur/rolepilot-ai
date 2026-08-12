@@ -27,6 +27,11 @@ export async function researchOpportunityAction(
     await researchOpportunity(parsed.data.profileId, parsed.data.jobId);
     return { status: 'success', message: 'Pesquisa concluída.' };
   } catch (error) {
+    const classification =
+      error instanceof OpportunityResearchError ? error.classification : 'preflight_or_persistence';
+    console.warn(
+      `Opportunity research failed: stage=server_action classification=${classification}`,
+    );
     return {
       status: 'error',
       message:

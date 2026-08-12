@@ -28,7 +28,12 @@ function classify(error: unknown, extraction = false): ResearchProviderError {
 }
 async function request(path: string, body: Record<string, unknown>, extraction = false) {
   const apiKey = process.env.TAVILY_API_KEY;
-  if (!apiKey) throw new ResearchProviderError('research_configuration');
+  if (!apiKey) {
+    console.warn(
+      `Opportunity research failed: stage=tavily_${extraction ? 'extract' : 'search'} classification=research_configuration`,
+    );
+    throw new ResearchProviderError('research_configuration');
+  }
   try {
     const response = await fetch(`${apiBase}${path}`, {
       method: 'POST',
