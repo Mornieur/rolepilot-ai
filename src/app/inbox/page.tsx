@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { Alert, EmptyState, Select, Surface } from '@/components/feitoza-ui';
+import { Alert, EmptyState, Surface } from '@/components/feitoza-ui';
 import { PageContainer, PageContent, PageHeader } from '@/components/page-layout';
 import { selectAccessibleProfile } from '@/features/auth/policy';
 import { requirePageUser } from '@/features/auth/server/auth';
 import { OpportunityInbox } from '@/features/opportunity-inbox/components/opportunity-inbox';
+import { InboxProfileSelector } from '@/features/opportunity-inbox/components/inbox-profile-selector';
 import {
   OpportunityInboxDataError,
   loadOpportunityInbox,
@@ -57,22 +58,10 @@ export default async function InboxPage({
         />
         {profiles.profiles.length ? (
           <Surface className="mt-6 p-5">
-            <form>
-              <Select
-                id="profileId"
-                name="profileId"
-                label="Perfil"
-                defaultValue={profile?.id ?? ''}
-                fullWidth
-                onChange={(event) => event.currentTarget.form?.requestSubmit()}
-              >
-                {profiles.profiles.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.name}
-                  </option>
-                ))}
-              </Select>
-            </form>
+            <InboxProfileSelector
+              profiles={profiles.profiles.map(({ id, name }) => ({ id, name }))}
+              profileId={profile?.id}
+            />
           </Surface>
         ) : (
           <EmptyState

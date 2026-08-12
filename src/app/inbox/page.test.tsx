@@ -1,7 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const dependencies = vi.hoisted(() => ({ user: vi.fn(), profiles: vi.fn(), inbox: vi.fn() }));
+const dependencies = vi.hoisted(() => ({
+  user: vi.fn(),
+  profiles: vi.fn(),
+  inbox: vi.fn(),
+  profileSelector: vi.fn(),
+}));
 vi.mock('@/features/auth/server/auth', () => ({ requirePageUser: dependencies.user }));
 vi.mock('@/features/profiles/server/load-profiles', () => ({
   loadCandidateProfiles: dependencies.profiles,
@@ -12,6 +17,12 @@ vi.mock('@/features/opportunity-inbox/server/load-opportunity-inbox', () => ({
 }));
 vi.mock('@/features/opportunity-inbox/components/opportunity-inbox', () => ({
   OpportunityInbox: () => <div>Inbox carregado</div>,
+}));
+vi.mock('@/features/opportunity-inbox/components/inbox-profile-selector', () => ({
+  InboxProfileSelector: (props: unknown) => {
+    dependencies.profileSelector(props);
+    return <div>Seletor de perfil</div>;
+  },
 }));
 import InboxPage from './page';
 
@@ -35,11 +46,19 @@ describe('InboxPage authorization boundary', () => {
       opportunities: [],
       summary: { compatible: 0, new: 0, saved: 0, excellent: 0 },
     });
+    dependencies.profileSelector.mockReset();
   });
   it('loads only a selected profile from the authorized list', async () => {
     render(await InboxPage({ searchParams: Promise.resolve({ profileId: profile.id }) }));
     expect(dependencies.inbox).toHaveBeenCalledWith(profile);
     expect(screen.getByText('Inbox carregado')).toBeInTheDocument();
+  });
+  it('passes only serializable profile data to the interactive selector boundary', async () => {
+    render(await InboxPage({ searchParams: Promise.resolve({ profileId: profile.id }) }));
+    expect(dependencies.profileSelector).toHaveBeenCalledWith({
+      profiles: [{ id: profile.id, name: profile.name }],
+      profileId: profile.id,
+    });
   });
   it('does not load or reveal an unauthorized profile id', async () => {
     render(await InboxPage({ searchParams: Promise.resolve({ profileId: otherProfile.id }) }));
