@@ -38,6 +38,7 @@ vi.mock('@/features/opportunity-intelligence/server/dossiers', () => ({
 }));
 
 import { OpportunityResearchError, researchOpportunity } from './pipeline';
+import { opportunityDossierJsonSchema } from '@/features/opportunity-intelligence/schema';
 
 const profile = {
   id: 'p',
@@ -226,5 +227,58 @@ describe('opportunity research observability boundary', () => {
     expect(logs).not.toContain('média');
     expect(logs).not.toContain('tavily-test-secret');
     expect(logs).not.toContain('gemini-test-secret');
+  });
+
+  it('sends the Gemini-compatible structured response contract without credentials', async () => {
+    await expect(
+      researchOpportunity(
+        'p',
+        'j',
+        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
+        'exec-request-contract',
+      ),
+    ).resolves.toEqual({ id: 'dossier' });
+    const request = dependencies.generateContent.mock.calls[0][0];
+    expect(request.config).toMatchObject({
+      responseMimeType: 'application/json',
+      responseJsonSchema: opportunityDossierJsonSchema,
+    });
+    expect(JSON.stringify(request)).not.toContain('tavily-test-secret');
+    expect(JSON.stringify(request)).not.toContain('gemini-test-secret');
+  });
+
+  it('keeps safe Gemini HTTP metadata on the single stage failure log', async () => {
+    dependencies.generateContent.mockRejectedValue(
+      Object.assign(
+        new Error(
+          JSON.stringify({
+            error: {
+              code: 400,
+              status: 'INVALID_ARGUMENT',
+              details: [{ reason: 'INVALID_JSON_SCHEMA' }],
+            },
+          }),
+        ),
+        { status: 400 },
+      ),
+    );
+    await expect(
+      researchOpportunity(
+        'p',
+        'j',
+        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
+        'exec-gemini-http',
+      ),
+    ).rejects.toMatchObject({ classification: 'gemini_http' });
+    const geminiFailures = error.mock.calls
+      .map(([entry]) => String(entry))
+      .filter(
+        (entry) => entry.includes('"stage":"gemini"') && entry.includes('"outcome":"failed"'),
+      );
+    expect(geminiFailures).toHaveLength(1);
+    expect(geminiFailures[0]).toContain('"http_status":400');
+    expect(geminiFailures[0]).toContain('"provider_status":"INVALID_ARGUMENT"');
+    expect(geminiFailures[0]).toContain('"provider_reason":"INVALID_JSON_SCHEMA"');
+    expect(geminiFailures[0]).not.toContain('"message"');
   });
 });

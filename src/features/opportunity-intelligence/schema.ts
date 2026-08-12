@@ -16,16 +16,16 @@ const evidenceJsonSchema = {
   additionalProperties: false,
   required: ['sourceId', 'classification'],
   properties: {
-    sourceId: { type: 'string', format: 'uuid' },
+    sourceId: { type: 'string' },
     classification: { type: 'string', enum: ['known', 'likely', 'anecdotal', 'unknown'] },
   },
 } as const;
 
-const textJsonSchema = { type: 'string', minLength: 1, maxLength: 800 } as const;
-const textArrayJsonSchema = (maxItems: number, maxLength = 800) => ({
+const textJsonSchema = { type: 'string' } as const;
+const textArrayJsonSchema = (maxItems: number) => ({
   type: 'array',
   maxItems,
-  items: { type: 'string', minLength: 1, maxLength },
+  items: textJsonSchema,
 });
 
 export const opportunityDossierSchema = z.object({
@@ -143,7 +143,7 @@ export const opportunityDossierJsonSchema = {
             additionalProperties: false,
             required: ['label', 'confidence', 'evidence'],
             properties: {
-              label: { type: 'string', minLength: 1, maxLength: 80 },
+              label: textJsonSchema,
               confidence: evidenceJsonSchema.properties.classification,
               evidence: { type: 'array', maxItems: 4, items: evidenceJsonSchema },
             },
@@ -153,7 +153,7 @@ export const opportunityDossierJsonSchema = {
         stage: textJsonSchema,
         publicPrivateStatus: textJsonSchema,
         size: textJsonSchema,
-        markets: textArrayJsonSchema(8, 160),
+        markets: textArrayJsonSchema(8),
         engineeringContext: textJsonSchema,
       },
     },
@@ -182,9 +182,9 @@ export const opportunityDossierJsonSchema = {
       ],
       properties: {
         observations: textArrayJsonSchema(8),
-        estimatedRange: { type: ['string', 'null'], maxLength: 160 },
-        currencyUnit: { type: ['string', 'null'], maxLength: 80 },
-        components: textArrayJsonSchema(4, 120),
+        estimatedRange: { type: ['string', 'null'] },
+        currencyUnit: { type: ['string', 'null'] },
+        components: textArrayJsonSchema(4),
         confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
         conflicts: textArrayJsonSchema(6),
         unknowns: textArrayJsonSchema(6),
@@ -221,7 +221,7 @@ export const opportunityDossierJsonSchema = {
               additionalProperties: false,
               required: ['topic', 'why', 'evidence'],
               properties: {
-                topic: { type: 'string', minLength: 1, maxLength: 120 },
+                topic: textJsonSchema,
                 why: textJsonSchema,
                 evidence: { type: 'array', maxItems: 4, items: evidenceJsonSchema },
               },
@@ -336,4 +336,43 @@ export function hasOnlyKnownDossierCitations(
     ),
   ];
   return references.every((reference) => sourceIds.has(reference.sourceId));
+}
+
+const geminiJsonSchemaKeywords = new Set([
+  '$id',
+  '$defs',
+  '$ref',
+  '$anchor',
+  'type',
+  'format',
+  'title',
+  'description',
+  'enum',
+  'items',
+  'prefixItems',
+  'minItems',
+  'maxItems',
+  'minimum',
+  'maximum',
+  'anyOf',
+  'oneOf',
+  'properties',
+  'additionalProperties',
+  'required',
+  'propertyOrdering',
+]);
+
+export function findUnsupportedGeminiJsonSchemaKeywords(schema: unknown): string[] {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return [];
+  const node = schema as Record<string, unknown>;
+  const unsupported = Object.keys(node).filter((key) => !geminiJsonSchemaKeywords.has(key));
+  const nested = [
+    ...(node.items ? findUnsupportedGeminiJsonSchemaKeywords(node.items) : []),
+    ...(node.properties && typeof node.properties === 'object'
+      ? Object.values(node.properties as Record<string, unknown>).flatMap(
+          findUnsupportedGeminiJsonSchemaKeywords,
+        )
+      : []),
+  ];
+  return [...unsupported, ...nested];
 }

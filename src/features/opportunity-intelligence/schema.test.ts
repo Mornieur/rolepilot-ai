@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  findUnsupportedGeminiJsonSchemaKeywords,
   hasOnlyKnownDossierCitations,
+  opportunityDossierJsonSchema,
   opportunityDossierSchema,
   opportunityDossierValidationIssues,
 } from './schema';
@@ -75,6 +77,20 @@ const representativeDossier = {
 };
 
 describe('Opportunity Intelligence dossier contract', () => {
+  it('uses only Gemini-supported JSON Schema keywords while retaining the structured shape', () => {
+    expect(findUnsupportedGeminiJsonSchemaKeywords(opportunityDossierJsonSchema)).toEqual([]);
+    expect(opportunityDossierJsonSchema.required).toContain('compensation');
+    expect(opportunityDossierJsonSchema.properties.compensation.required).toContain(
+      'estimatedRange',
+    );
+    expect(opportunityDossierJsonSchema.properties.compensation.properties.estimatedRange).toEqual({
+      type: ['string', 'null'],
+    });
+    expect(
+      opportunityDossierJsonSchema.properties.careerImpact.properties.aiExposure.properties.level,
+    ).toEqual({ type: 'string', enum: ['strong', 'moderate', 'limited', 'unknown'] });
+  });
+
   it('accepts representative Gemini-shaped output with intentional null compensation facts', () => {
     expect(opportunityDossierSchema.safeParse(representativeDossier).success).toBe(true);
     expect(
