@@ -52,6 +52,7 @@ export async function researchOpportunityAction(
     if (!data || (user.role !== 'admin' && data.user_id !== user.id))
       throw new AuthorizationError();
     logOpportunityResearch({ execution, stage: activeStage, outcome: 'success' });
+    activeStage = 'action';
     await researchOpportunity(parsed.data.profileId, parsed.data.jobId, undefined, execution);
     return { status: 'success', message: 'Pesquisa conclu\u00edda.' };
   } catch (error) {

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
@@ -40,6 +42,14 @@ describe('opportunity research Server Action boundary', () => {
     error.mockClear();
   });
 
+  it('remains a module-level use server action module', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'src/features/opportunity-intelligence/actions.ts'),
+      'utf8',
+    );
+    expect(source).toMatch(/^'use server';/);
+  });
+
   it('returns controlled state for an unexpected pipeline error', async () => {
     dependencies.research.mockRejectedValue(new Error('provider response with secret-like text'));
     const form = new FormData();
@@ -52,6 +62,7 @@ describe('opportunity research Server Action boundary', () => {
       message: 'Não foi possível pesquisar a oportunidade agora.',
     });
     const logs = error.mock.calls.flat().join(' ');
+    expect(logs).toContain('"stage":"action"');
     expect(logs).toContain('"classification":"unexpected"');
     expect(logs).not.toContain('secret-like text');
   });

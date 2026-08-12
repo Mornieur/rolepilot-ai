@@ -10,6 +10,24 @@ const impact = z.object({
   level: z.enum(['strong', 'moderate', 'limited', 'unknown']),
   explanation: text,
 });
+
+const evidenceJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['sourceId', 'classification'],
+  properties: {
+    sourceId: { type: 'string', format: 'uuid' },
+    classification: { type: 'string', enum: ['known', 'likely', 'anecdotal', 'unknown'] },
+  },
+} as const;
+
+const textJsonSchema = { type: 'string', minLength: 1, maxLength: 800 } as const;
+const textArrayJsonSchema = (maxItems: number, maxLength = 800) => ({
+  type: 'array',
+  maxItems,
+  items: { type: 'string', minLength: 1, maxLength },
+});
+
 export const opportunityDossierSchema = z.object({
   opportunitySummary: text,
   company: z.object({
@@ -82,3 +100,240 @@ export const opportunityDossierSchema = z.object({
   citations: z.array(evidence).max(30),
   researchTimestamp: z.string().datetime(),
 });
+
+export const opportunityDossierJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'opportunitySummary',
+    'company',
+    'companyMoment',
+    'compensation',
+    'hiringProcess',
+    'preparation',
+    'candidateFit',
+    'careerImpact',
+    'applicationPositioning',
+    'questionsToInvestigate',
+    'citations',
+    'researchTimestamp',
+  ],
+  properties: {
+    opportunitySummary: textJsonSchema,
+    company: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'overview',
+        'categories',
+        'businessModel',
+        'stage',
+        'publicPrivateStatus',
+        'size',
+        'markets',
+        'engineeringContext',
+      ],
+      properties: {
+        overview: textJsonSchema,
+        categories: {
+          type: 'array',
+          maxItems: 8,
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['label', 'confidence', 'evidence'],
+            properties: {
+              label: { type: 'string', minLength: 1, maxLength: 80 },
+              confidence: evidenceJsonSchema.properties.classification,
+              evidence: { type: 'array', maxItems: 4, items: evidenceJsonSchema },
+            },
+          },
+        },
+        businessModel: textJsonSchema,
+        stage: textJsonSchema,
+        publicPrivateStatus: textJsonSchema,
+        size: textJsonSchema,
+        markets: textArrayJsonSchema(8, 160),
+        engineeringContext: textJsonSchema,
+      },
+    },
+    companyMoment: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['knownFacts', 'recentDevelopments', 'inferences', 'unknowns'],
+      properties: {
+        knownFacts: textArrayJsonSchema(8),
+        recentDevelopments: textArrayJsonSchema(8),
+        inferences: textArrayJsonSchema(8),
+        unknowns: textArrayJsonSchema(8),
+      },
+    },
+    compensation: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'observations',
+        'estimatedRange',
+        'currencyUnit',
+        'components',
+        'confidence',
+        'conflicts',
+        'unknowns',
+      ],
+      properties: {
+        observations: textArrayJsonSchema(8),
+        estimatedRange: { type: ['string', 'null'], maxLength: 160 },
+        currencyUnit: { type: ['string', 'null'], maxLength: 80 },
+        components: textArrayJsonSchema(4, 120),
+        confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+        conflicts: textArrayJsonSchema(6),
+        unknowns: textArrayJsonSchema(6),
+      },
+    },
+    hiringProcess: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'officialKnownStages',
+        'anecdotalReportedStages',
+        'likelyExpectations',
+        'confidence',
+      ],
+      properties: {
+        officialKnownStages: textArrayJsonSchema(8),
+        anecdotalReportedStages: textArrayJsonSchema(8),
+        likelyExpectations: textArrayJsonSchema(8),
+        confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+      },
+    },
+    preparation: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['mustReview', 'shouldReview', 'optional', 'behavioral', 'companyKnowledge'],
+      properties: Object.fromEntries(
+        ['mustReview', 'shouldReview', 'optional', 'behavioral', 'companyKnowledge'].map((key) => [
+          key,
+          {
+            type: 'array',
+            maxItems: 8,
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['topic', 'why', 'evidence'],
+              properties: {
+                topic: { type: 'string', minLength: 1, maxLength: 120 },
+                why: textJsonSchema,
+                evidence: { type: 'array', maxItems: 4, items: evidenceJsonSchema },
+              },
+            },
+          },
+        ]),
+      ),
+    },
+    candidateFit: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['alreadyStrong', 'refresh', 'realGaps', 'unknowns'],
+      properties: {
+        alreadyStrong: textArrayJsonSchema(8),
+        refresh: textArrayJsonSchema(8),
+        realGaps: textArrayJsonSchema(8),
+        unknowns: textArrayJsonSchema(8),
+      },
+    },
+    careerImpact: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'technicalGrowth',
+        'leadershipExposure',
+        'aiExposure',
+        'productExposure',
+        'internationalExposure',
+        'compensationUpside',
+        'roleScopeRisk',
+      ],
+      properties: Object.fromEntries(
+        [
+          'technicalGrowth',
+          'leadershipExposure',
+          'aiExposure',
+          'productExposure',
+          'internationalExposure',
+          'compensationUpside',
+          'roleScopeRisk',
+        ].map((key) => [
+          key,
+          {
+            type: 'object',
+            additionalProperties: false,
+            required: ['level', 'explanation'],
+            properties: {
+              level: { type: 'string', enum: ['strong', 'moderate', 'limited', 'unknown'] },
+              explanation: textJsonSchema,
+            },
+          },
+        ]),
+      ),
+    },
+    applicationPositioning: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['emphasize', 'storiesToPrepare', 'evidenceToQuantify'],
+      properties: {
+        emphasize: textArrayJsonSchema(8),
+        storiesToPrepare: textArrayJsonSchema(8),
+        evidenceToQuantify: textArrayJsonSchema(8),
+      },
+    },
+    questionsToInvestigate: textArrayJsonSchema(10),
+    citations: { type: 'array', maxItems: 30, items: evidenceJsonSchema },
+    researchTimestamp: { type: 'string', format: 'date-time' },
+  },
+} as const;
+
+function valueAtPath(value: unknown, path: PropertyKey[]): unknown {
+  let current = value;
+  for (const key of path) {
+    if (!current || typeof current !== 'object' || !Object.hasOwn(current, key)) return undefined;
+    current = (current as Record<PropertyKey, unknown>)[key];
+  }
+  return current;
+}
+
+function jsonValueCategory(value: unknown) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+export function opportunityDossierValidationIssues(error: z.ZodError, value: unknown) {
+  return error.issues.slice(0, 20).map((issue) => {
+    const expected =
+      issue.code === 'invalid_value'
+        ? 'enum'
+        : typeof (issue as { expected?: unknown }).expected === 'string'
+          ? (issue as { expected: string }).expected
+          : undefined;
+    return {
+      path: issue.path.join('.') || 'root',
+      code: issue.code,
+      ...(expected ? { expected } : {}),
+      actual: jsonValueCategory(valueAtPath(value, issue.path)),
+    };
+  });
+}
+
+export function hasOnlyKnownDossierCitations(
+  dossier: z.output<typeof opportunityDossierSchema>,
+  sourceIds: Set<string>,
+) {
+  const references = [
+    ...dossier.citations,
+    ...dossier.company.categories.flatMap((category) => category.evidence),
+    ...Object.values(dossier.preparation).flatMap((topics) =>
+      topics.flatMap((topic) => topic.evidence),
+    ),
+  ];
+  return references.every((reference) => sourceIds.has(reference.sourceId));
+}

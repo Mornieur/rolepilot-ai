@@ -204,4 +204,27 @@ describe('opportunity research observability boundary', () => {
     ).rejects.toMatchObject({ classification: 'source_persistence' });
     expect(error.mock.calls.flat().join(' ')).toContain('source_persistence');
   });
+
+  it('logs only safe Zod metadata for dossier validation failures', async () => {
+    dependencies.generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        ...valid,
+        compensation: { ...valid.compensation, confidence: 'média' },
+      }),
+    });
+    await expect(
+      researchOpportunity(
+        'p',
+        'j',
+        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
+        'exec-dossier-validation',
+      ),
+    ).rejects.toMatchObject({ classification: 'dossier_validation' });
+    const logs = error.mock.calls.flat().join(' ');
+    expect(logs).toContain('"path":"compensation.confidence"');
+    expect(logs).toContain('"code":"invalid_value"');
+    expect(logs).not.toContain('média');
+    expect(logs).not.toContain('tavily-test-secret');
+    expect(logs).not.toContain('gemini-test-secret');
+  });
 });

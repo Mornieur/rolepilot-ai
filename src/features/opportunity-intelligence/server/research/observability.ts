@@ -3,6 +3,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 
 export type OpportunityResearchStage =
+  | 'action'
   | 'input'
   | 'auth'
   | 'authorization'
@@ -62,6 +63,7 @@ export function logOpportunityResearch(input: {
   count?: number;
   cache?: 'hit' | 'miss';
   httpStatus?: number;
+  issues?: { path: string; code: string; expected?: string; actual: string }[];
 }) {
   const entry = {
     event: 'opportunity_research',
@@ -73,6 +75,7 @@ export function logOpportunityResearch(input: {
     ...(input.count !== undefined ? { count: input.count } : {}),
     ...(input.cache ? { cache: input.cache } : {}),
     ...(input.httpStatus !== undefined ? { http_status: input.httpStatus } : {}),
+    ...(input.issues ? { issues: input.issues } : {}),
   };
   (input.outcome === 'failed' ? console.error : console.info)(JSON.stringify(entry));
 }
