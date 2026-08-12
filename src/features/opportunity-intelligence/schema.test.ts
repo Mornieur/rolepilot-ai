@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   findUnsupportedGeminiJsonSchemaKeywords,
+  geminiProviderDossierJsonSchema,
+  geminiProviderDossierSchema,
+  geminiSchemaComplexity,
+  geminiSchemaSectionComplexity,
   hasOnlyKnownDossierCitations,
+  mapGeminiProviderDossier,
   opportunityDossierJsonSchema,
   opportunityDossierSchema,
   opportunityDossierValidationIssues,
@@ -78,7 +83,10 @@ const representativeDossier = {
 
 describe('Opportunity Intelligence dossier contract', () => {
   it('uses only Gemini-supported JSON Schema keywords while retaining the structured shape', () => {
-    expect(findUnsupportedGeminiJsonSchemaKeywords(opportunityDossierJsonSchema)).toEqual([]);
+    expect(findUnsupportedGeminiJsonSchemaKeywords(geminiProviderDossierJsonSchema)).toEqual([]);
+    expect(geminiProviderDossierJsonSchema.required).toEqual(
+      expect.arrayContaining(['compensation', 'citations', 'researchTimestamp']),
+    );
     expect(opportunityDossierJsonSchema.required).toContain('compensation');
     expect(opportunityDossierJsonSchema.properties.compensation.required).toContain(
       'estimatedRange',
@@ -89,6 +97,45 @@ describe('Opportunity Intelligence dossier contract', () => {
     expect(
       opportunityDossierJsonSchema.properties.careerImpact.properties.aiExposure.properties.level,
     ).toEqual({ type: 'string', enum: ['strong', 'moderate', 'limited', 'unknown'] });
+  });
+
+  it('measures a materially smaller, shallower provider schema without changing the authority schema', () => {
+    const authoritative = geminiSchemaComplexity(opportunityDossierJsonSchema);
+    const provider = geminiSchemaComplexity(geminiProviderDossierJsonSchema);
+    expect(authoritative).toMatchInlineSnapshot(`
+      {
+        "arraySchemaCount": 33,
+        "enumCount": 17,
+        "maxDepth": 7,
+        "propertyCount": 100,
+        "requiredFieldCount": 100,
+        "serializedBytes": 8268,
+      }
+    `);
+    expect(provider.serializedBytes).toBeLessThan(authoritative.serializedBytes);
+    expect(provider.maxDepth).toBeLessThan(authoritative.maxDepth);
+    expect(provider.propertyCount).toBeLessThan(authoritative.propertyCount);
+    expect(provider.requiredFieldCount).toBeLessThan(authoritative.requiredFieldCount);
+    expect(provider.enumCount).toBeLessThan(authoritative.enumCount);
+    expect(provider.arraySchemaCount).toBeLessThanOrEqual(authoritative.arraySchemaCount);
+    expect(provider).toMatchInlineSnapshot(`
+      {
+        "arraySchemaCount": 33,
+        "enumCount": 10,
+        "maxDepth": 6,
+        "propertyCount": 86,
+        "requiredFieldCount": 86,
+        "serializedBytes": 5811,
+      }
+    `);
+    const largestSections = Object.entries(
+      geminiSchemaSectionComplexity(opportunityDossierJsonSchema),
+    )
+      .sort(([, left], [, right]) => right.serializedBytes - left.serializedBytes)
+      .slice(0, 3)
+      .map(([name]) => name);
+    expect(largestSections).toEqual(['preparation', 'careerImpact', 'company']);
+    expect(JSON.stringify(geminiProviderDossierJsonSchema)).not.toContain('"format"');
   });
 
   it('accepts representative Gemini-shaped output with intentional null compensation facts', () => {
@@ -148,5 +195,41 @@ describe('Opportunity Intelligence dossier contract', () => {
     };
     const parsed = opportunityDossierSchema.parse(output);
     expect(hasOnlyKnownDossierCitations(parsed, new Set([sourceId]))).toBe(false);
+  });
+
+  it('maps the provider source IDs to known source classifications before authoritative validation', () => {
+    const provider = geminiProviderDossierSchema.parse({
+      ...representativeDossier,
+      company: {
+        ...representativeDossier.company,
+        categories: [{ label: 'SaaS', confidence: 'known', sourceIds: [sourceId] }],
+      },
+      preparation: {
+        ...representativeDossier.preparation,
+        mustReview: [
+          { topic: 'System design', why: 'Relevant to the role.', sourceIds: [sourceId] },
+        ],
+      },
+      citations: [sourceId],
+    });
+    const mapped = mapGeminiProviderDossier(provider, new Map([[sourceId, 'known' as const]]));
+    expect(mapped).not.toBeNull();
+    if (!mapped) throw new Error('Expected provider dossier mapping to succeed');
+    expect(opportunityDossierSchema.safeParse(mapped).success).toBe(true);
+    expect(mapped.citations).toEqual([evidence]);
+    expect(mapped.preparation.mustReview[0]!.evidence).toEqual([evidence]);
+  });
+
+  it('rejects provider source IDs that cannot be deterministically classified', () => {
+    const provider = geminiProviderDossierSchema.parse({
+      ...representativeDossier,
+      company: { ...representativeDossier.company, categories: [] },
+      preparation: {
+        ...representativeDossier.preparation,
+        mustReview: [],
+      },
+      citations: [unknownSourceId],
+    });
+    expect(mapGeminiProviderDossier(provider, new Map([[sourceId, 'known' as const]]))).toBeNull();
   });
 });
