@@ -103,6 +103,47 @@ function externalClassification(error: unknown, provider: 'tavily' | 'gemini') {
   return provider === 'tavily' ? 'tavily_network' : 'gemini_network';
 }
 
+function safeProviderToken(value: unknown) {
+  return typeof value === 'string' && /^[A-Z0-9_.:/-]{1,120}$/.test(value) ? value : undefined;
+}
+
+function geminiHttpMetadata(error: unknown) {
+  const httpStatus =
+    typeof error === 'object' && error && 'status' in error && typeof error.status === 'number'
+      ? error.status
+      : undefined;
+  if (
+    !error ||
+    typeof error !== 'object' ||
+    !('message' in error) ||
+    typeof error.message !== 'string'
+  )
+    return { httpStatus };
+  try {
+    const body = JSON.parse(error.message) as { error?: Record<string, unknown> };
+    const providerError = body.error;
+    const providerCode = typeof providerError?.code === 'number' ? providerError.code : undefined;
+    const details = Array.isArray(providerError?.details) ? providerError.details : [];
+    const reason = details.find(
+      (detail) =>
+        detail &&
+        typeof detail === 'object' &&
+        safeProviderToken((detail as Record<string, unknown>).reason),
+    ) as Record<string, unknown> | undefined;
+    return {
+      httpStatus: httpStatus ?? providerCode,
+      ...(safeProviderToken(providerError?.status)
+        ? { providerStatus: safeProviderToken(providerError?.status) }
+        : {}),
+      ...(reason && safeProviderToken(reason.reason)
+        ? { providerReason: safeProviderToken(reason.reason) }
+        : {}),
+    };
+  } catch {
+    return { httpStatus };
+  }
+}
+
 export async function researchOpportunity(
   profileId: string,
   jobId: string,
@@ -112,6 +153,7 @@ export async function researchOpportunity(
   const pipelineStartedAt = Date.now();
   let activeStage: OpportunityResearchStage = 'data_load';
   let validationIssues: ReturnType<typeof opportunityDossierValidationIssues> | undefined;
+  let providerFailure: ReturnType<typeof geminiHttpMetadata> | undefined;
   logOpportunityResearch({ execution, stage: 'pipeline', outcome: 'start' });
   try {
     const dataStartedAt = Date.now();
@@ -191,16 +233,6 @@ export async function researchOpportunity(
       );
     } catch (error) {
       const classification = externalClassification(error, 'tavily');
-      logOpportunityResearch({
-        execution,
-        stage: 'tavily_search',
-        outcome: 'failed',
-        classification,
-        durationMs: Date.now() - searchStartedAt,
-        ...(error instanceof ResearchProviderError && error.httpStatus !== undefined
-          ? { httpStatus: error.httpStatus }
-          : {}),
-      });
       throw new OpportunityResearchError(classification);
     }
     logOpportunityResearch({
@@ -357,13 +389,7 @@ export async function researchOpportunity(
       });
     } catch (error) {
       const classification = externalClassification(error, 'gemini');
-      logOpportunityResearch({
-        execution,
-        stage: 'gemini',
-        outcome: 'failed',
-        classification,
-        durationMs: Date.now() - geminiStartedAt,
-      });
+      providerFailure = classification === 'gemini_http' ? geminiHttpMetadata(error) : undefined;
       throw new OpportunityResearchError(classification);
     }
     logOpportunityResearch({
@@ -438,6 +464,7 @@ export async function researchOpportunity(
       outcome: 'failed',
       classification,
       durationMs: Date.now() - pipelineStartedAt,
+      ...(providerFailure ?? {}),
       ...(activeStage === 'dossier_validation' && validationIssues
         ? { issues: validationIssues }
         : {}),

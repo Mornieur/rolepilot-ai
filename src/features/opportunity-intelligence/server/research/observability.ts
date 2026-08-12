@@ -63,6 +63,8 @@ export function logOpportunityResearch(input: {
   count?: number;
   cache?: 'hit' | 'miss';
   httpStatus?: number;
+  providerStatus?: string;
+  providerReason?: string;
   issues?: { path: string; code: string; expected?: string; actual: string }[];
 }) {
   const entry = {
@@ -75,6 +77,8 @@ export function logOpportunityResearch(input: {
     ...(input.count !== undefined ? { count: input.count } : {}),
     ...(input.cache ? { cache: input.cache } : {}),
     ...(input.httpStatus !== undefined ? { http_status: input.httpStatus } : {}),
+    ...(input.providerStatus ? { provider_status: input.providerStatus } : {}),
+    ...(input.providerReason ? { provider_reason: input.providerReason } : {}),
     ...(input.issues ? { issues: input.issues } : {}),
   };
   (input.outcome === 'failed' ? console.error : console.info)(JSON.stringify(entry));

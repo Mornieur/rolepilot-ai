@@ -24,7 +24,6 @@ export async function researchOpportunityAction(
 ): Promise<OpportunityResearchActionState> {
   const execution = createOpportunityResearchExecutionId();
   let activeStage: OpportunityResearchStage = 'input';
-  logOpportunityResearch({ execution, stage: 'pipeline', outcome: 'start' });
   const parsed = ids.safeParse({
     profileId: formData.get('profileId'),
     jobId: formData.get('jobId'),
