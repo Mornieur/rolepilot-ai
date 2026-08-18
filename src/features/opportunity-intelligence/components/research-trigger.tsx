@@ -8,10 +8,12 @@ export function ResearchTrigger({
   profileId,
   jobId,
   disabled = false,
+  label = 'Pesquisar empresa e preparar candidatura',
 }: {
   profileId: string;
   jobId: string;
   disabled?: boolean;
+  label?: string;
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(
@@ -26,7 +28,7 @@ export function ResearchTrigger({
       <input type="hidden" name="profileId" value={profileId} />
       <input type="hidden" name="jobId" value={jobId} />
       <Button type="submit" disabled={disabled || pending}>
-        {pending ? 'Pesquisando…' : 'Pesquisar empresa e preparar candidatura'}
+        {pending ? 'Pesquisando…' : label}
       </Button>
       {state.message && (
         <p className="mt-2 text-sm" role={state.status === 'error' ? 'alert' : 'status'}>

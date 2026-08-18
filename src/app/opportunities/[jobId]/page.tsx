@@ -10,8 +10,12 @@ import { getStatus } from '@/features/job-actions/server/job-statuses';
 import { JobStatusControls } from '@/features/job-actions/components/job-status-controls';
 import { evaluateJob } from '@/features/job-evaluation/evaluate';
 import { getLatestResearchDossier } from '@/features/opportunity-intelligence/server/dossiers';
-import { OpportunityDossierView } from '@/features/opportunity-intelligence/components/opportunity-dossier';
-import { ResearchTrigger } from '@/features/opportunity-intelligence/components/research-trigger';
+import { OpportunityResearchPanel } from '@/features/opportunity-intelligence/components/opportunity-research-panel';
+import {
+  isCurrentOpportunityResearchDossier,
+  opportunityResearchFingerprint,
+} from '@/features/opportunity-intelligence/server/research/cache';
+import { resolveGeminiModel } from '@/features/ai-job-analysis/analyze-job';
 import { isNewOpportunity } from '@/features/opportunity-inbox/inbox';
 import { jobDecisionLabels } from '@/features/job-actions/status-presentation';
 export const dynamic = 'force-dynamic';
@@ -55,6 +59,10 @@ export default async function OpportunityPage({
     getLatestResearchDossier(profile.id, job.id),
   ]);
   const evaluation = evaluateJob(profile, job);
+  const dossierIsCurrent = isCurrentOpportunityResearchDossier(
+    dossier,
+    opportunityResearchFingerprint(profile, job, resolveGeminiModel()),
+  );
   const warnings = evaluation.reasons
     .filter((reason) => reason.outcome === 'fail' || reason.code === 'required-partial')
     .map((reason) => reason.message);
@@ -122,19 +130,12 @@ export default async function OpportunityPage({
             </ul>
           </Card>
         </section>
-        {dossier?.status === 'completed' && dossier.structuredResult ? (
-          <OpportunityDossierView dossier={dossier} />
-        ) : (
-          <section className="mt-8">
-            <h2 className="text-2xl font-semibold">Inteligência da oportunidade</h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              A pesquisa é manual e não altera sua decisão nem o score determinístico.
-            </p>
-            <div className="mt-4">
-              <ResearchTrigger profileId={profile.id} jobId={job.id} />
-            </div>
-          </section>
-        )}
+        <OpportunityResearchPanel
+          dossier={dossier}
+          isCurrent={dossierIsCurrent}
+          profileId={profile.id}
+          jobId={job.id}
+        />
         <Link
           className="mt-8 inline-block text-sm text-sky-700 underline dark:text-cyan-300"
           href={`/inbox?profileId=${encodeURIComponent(profile.id)}`}

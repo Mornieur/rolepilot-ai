@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 import { evaluateJob } from '@/features/job-evaluation/evaluate';
 import { getPersistedJobById } from '@/features/jobs/server/persisted-jobs';
@@ -28,10 +28,8 @@ import {
 } from '@/features/opportunity-intelligence/schema';
 import type { ResearchDossier, ResearchSource } from '@/features/opportunity-intelligence/types';
 import { resolveGeminiModel } from '@/features/ai-job-analysis/analyze-job';
-import {
-  OPPORTUNITY_RESEARCH_CONTRACT_VERSION,
-  opportunityResearchContractVersions,
-} from './contract';
+import { OPPORTUNITY_RESEARCH_CONTRACT_VERSION } from './contract';
+import { isCurrentOpportunityResearchDossier, opportunityResearchFingerprint } from './cache';
 import { sanitizeEvidenceText, selectResearchSources, sourceClassification } from './evidence';
 import {
   createOpportunityResearchExecutionId,
@@ -57,34 +55,7 @@ export class OpportunityResearchError extends Error {
   }
 }
 
-export function opportunityResearchFingerprint(
-  profile: Awaited<ReturnType<typeof getCandidateProfileById>>,
-  job: Awaited<ReturnType<typeof getPersistedJobById>>,
-  model: string,
-  contract = opportunityResearchContractVersions(model),
-) {
-  return createHash('sha256')
-    .update(
-      JSON.stringify({
-        profile: profile && {
-          desiredRoles: profile.desiredRoles,
-          acceptedSeniorities: profile.acceptedSeniorities,
-          requiredSkills: profile.requiredSkills,
-          preferredSkills: profile.preferredSkills,
-          acceptedWorkModels: profile.acceptedWorkModels,
-          locations: profile.locations,
-        },
-        job: job && {
-          title: job.title,
-          description: job.descriptionText,
-          location: job.location,
-          sourceUpdatedAt: job.sourceUpdatedAt,
-        },
-        contract,
-      }),
-    )
-    .digest('hex');
-}
+export { opportunityResearchFingerprint } from './cache';
 
 function queryPlan(company: string, job: { title: string; location: string | null }) {
   const location = job.location ?? 'Brasil';
@@ -301,14 +272,7 @@ export async function researchOpportunity(
     } catch {
       throw new OpportunityResearchError('cache_read');
     }
-    if (
-      cached?.status === 'completed' &&
-      cached.structuredResult !== null &&
-      cached.sources.length > 0 &&
-      cached.researchFingerprint === researchFingerprint &&
-      cached.expiresAt &&
-      new Date(cached.expiresAt) > new Date()
-    ) {
+    if (isCurrentOpportunityResearchDossier(cached, researchFingerprint)) {
       logOpportunityResearch({
         execution,
         stage: 'cache',

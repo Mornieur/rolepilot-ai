@@ -146,6 +146,49 @@ describe('opportunity research Gemini boundary', () => {
     expect(d.persist).not.toHaveBeenCalled();
   });
 
+  it('does not replace a prior dossier when a refresh fails before atomic persistence', async () => {
+    const previous = {
+      id: 'previous-dossier',
+      status: 'completed',
+      structuredResult: {},
+      researchFingerprint: 'expired-fingerprint',
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+      sources: [{}],
+    };
+    d.cache.mockResolvedValue(previous);
+    d.generate.mockReset();
+    d.generate
+      .mockResolvedValueOnce({ text: JSON.stringify(companyIntelligence) })
+      .mockRejectedValue({ status: 400, message: '{}' });
+
+    await expect(
+      researchOpportunity(
+        'p',
+        'j',
+        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
+        'refresh-failure',
+      ),
+    ).rejects.toMatchObject({ classification: 'gemini_http' });
+
+    expect(d.persist).not.toHaveBeenCalled();
+    expect(previous.id).toBe('previous-dossier');
+  });
+
+  it('returns a refreshed dossier only after atomic persistence succeeds', async () => {
+    const persisted = { id: 'new-dossier', status: 'completed' };
+    d.persist.mockResolvedValue(persisted);
+
+    await expect(
+      researchOpportunity(
+        'p',
+        'j',
+        { search: vi.fn().mockResolvedValue([source]), extract: vi.fn().mockResolvedValue([]) },
+        'refresh-success',
+      ),
+    ).resolves.toBe(persisted);
+    expect(d.persist).toHaveBeenCalledTimes(1);
+  });
+
   it('retries one transient 503 once but never retries HTTP 400', async () => {
     d.generate.mockReset();
     d.generate

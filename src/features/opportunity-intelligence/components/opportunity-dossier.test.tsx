@@ -166,4 +166,12 @@ describe('OpportunityDossierView', () => {
     expect(sourceBadge({ tier: 3, sourceKind: 'career_platform' })).toBe('Mercado');
     expect(sourceBadge({ tier: 3, sourceKind: 'community' })).toBe('Comunidade');
   });
+
+  it('labels stale content as historical instead of current', () => {
+    render(<OpportunityDossierView dossier={dossier} isCurrent={false} />);
+    expect(
+      screen.getByText('Pesquisa histórica, realizada em', { exact: false }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Pesquisa atualizada em', { exact: false })).not.toBeInTheDocument();
+  });
 });

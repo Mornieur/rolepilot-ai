@@ -66,4 +66,22 @@ describe('opportunity research Server Action boundary', () => {
     expect(logs).toContain('"classification":"unexpected"');
     expect(logs).not.toContain('secret-like text');
   });
+
+  it('keeps profile ownership enforcement before starting a refresh', async () => {
+    dependencies.ownership.mockResolvedValue({
+      data: { user_id: '22222222-2222-4222-8222-222222222222' },
+      error: null,
+    });
+    const form = new FormData();
+    form.set('profileId', '11111111-1111-4111-8111-111111111111');
+    form.set('jobId', '22222222-2222-4222-8222-222222222222');
+
+    await expect(
+      researchOpportunityAction(initialOpportunityResearchActionState, form),
+    ).resolves.toEqual({
+      status: 'error',
+      message: 'Não foi possível pesquisar a oportunidade agora.',
+    });
+    expect(dependencies.research).not.toHaveBeenCalled();
+  });
 });

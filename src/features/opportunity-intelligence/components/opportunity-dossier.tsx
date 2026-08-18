@@ -109,7 +109,13 @@ function CompanyFacts({ company }: { company: OpportunityDossier['company'] }) {
   );
 }
 
-export function OpportunityDossierView({ dossier }: { dossier: ResearchDossier }) {
+export function OpportunityDossierView({
+  dossier,
+  isCurrent = true,
+}: {
+  dossier: ResearchDossier;
+  isCurrent?: boolean;
+}) {
   const value = dossier.structuredResult;
   if (!value) return null;
   const moment = value.companyMoment;
@@ -152,7 +158,7 @@ export function OpportunityDossierView({ dossier }: { dossier: ResearchDossier }
         Inteligência da oportunidade
       </h2>
       <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-        Pesquisa atualizada em{' '}
+        {isCurrent ? 'Pesquisa atualizada em ' : 'Pesquisa histórica, realizada em '}
         {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(
           new Date(value.researchTimestamp),
         )}
