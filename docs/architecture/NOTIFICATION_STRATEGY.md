@@ -24,6 +24,8 @@ Before the worker calls Telegram it atomically claims an event with the existing
 
 Only `pending` `new_eligible_job` events are considered. The server-only worker loads at most 20 oldest pending events with fewer than three attempts and processes them sequentially. It composes a concise Portuguese plain-text message from deterministic score/priority plus persisted company and job metadata; descriptions, profile fields, provider bodies, and Gemini content are excluded.
 
+After acquiring its lease, the worker rechecks the persisted job. A missing or inactive job is terminally marked `skipped` with the same conditional lease boundary and is never sent to Telegram. This removes undeliverable events from future pending batches while preserving retries for transient delivery and persistence failures.
+
 The worker uses `TELEGRAM_BOT_TOKEN` and the fixed `TELEGRAM_CHAT_ID` exclusively from server environment configuration. `POST /api/notifications/deliver` requires its own constant-time checked `NOTIFICATION_WORKER_SECRET`; request bodies cannot choose destination or content. The GitHub collection workflow invokes it only after collection succeeds, so a delivery failure does not alter collection success.
 
 Each send attempt increments `attempt_count` and sets `last_attempt_at`. A successful send marks the same event `delivered`, records `delivered_at`, and sets channel `telegram`. Failures use only controlled classifications (`configuration`, `timeout`, `unauthorized`, `rate_limit`, `bad_request`, `telegram_unavailable`, `persistence_failure`, or `unknown`); attempts one and two remain pending, and attempt three becomes failed. No automatic in-call retry occurs.

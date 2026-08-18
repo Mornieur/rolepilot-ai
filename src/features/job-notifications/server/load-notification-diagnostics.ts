@@ -8,7 +8,7 @@ import { listRecentJobNotificationEvents } from '@/features/job-notifications/se
 
 export type NotificationDiagnostics = {
   telegramConfigured: boolean;
-  counts: Record<'pending' | 'delivered' | 'failed', number>;
+  counts: Record<'pending' | 'delivered' | 'failed' | 'skipped', number>;
   lastEventCreatedAt: string | null;
   lastDeliveryAttemptAt: string | null;
   lastSuccessfulDeliveryAt: string | null;
@@ -20,7 +20,7 @@ export type NotificationDiagnostics = {
   >;
 };
 
-async function countEvents(status: 'pending' | 'delivered' | 'failed') {
+async function countEvents(status: 'pending' | 'delivered' | 'failed' | 'skipped') {
   const { count, error } = await getSupabaseServerClient()
     .from('job_notification_events')
     .select('id', { count: 'exact', head: true })
@@ -47,6 +47,7 @@ export async function loadNotificationDiagnostics(): Promise<NotificationDiagnos
     pending,
     delivered,
     failed,
+    skipped,
     lastEventCreatedAt,
     lastDeliveryAttemptAt,
     lastSuccessfulDeliveryAt,
@@ -54,6 +55,7 @@ export async function loadNotificationDiagnostics(): Promise<NotificationDiagnos
     countEvents('pending'),
     countEvents('delivered'),
     countEvents('failed'),
+    countEvents('skipped'),
     latestTimestamp('created_at'),
     latestTimestamp('last_attempt_at'),
     latestTimestamp('delivered_at'),
@@ -67,7 +69,7 @@ export async function loadNotificationDiagnostics(): Promise<NotificationDiagnos
   const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
   return {
     telegramConfigured: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
-    counts: { pending, delivered, failed },
+    counts: { pending, delivered, failed, skipped },
     lastEventCreatedAt,
     lastDeliveryAttemptAt,
     lastSuccessfulDeliveryAt,

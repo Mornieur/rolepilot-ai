@@ -165,6 +165,28 @@ export async function markJobNotificationEventDelivered(
   if (error || !data) throw new JobNotificationEventDataError();
 }
 
+/**
+ * Finalizes an event which can no longer be delivered. The attempt count is
+ * the lease token: a worker whose lease expired cannot terminally update a
+ * newer worker's claim.
+ */
+export async function markJobNotificationEventSkipped(
+  event: Pick<JobNotificationEvent, 'id' | 'attemptCount'>,
+): Promise<void> {
+  const { data, error } = await getSupabaseServerClient()
+    .from('job_notification_events')
+    .update({
+      status: 'skipped',
+      error_classification: null,
+    })
+    .eq('id', event.id)
+    .eq('status', 'pending')
+    .eq('attempt_count', event.attemptCount)
+    .select('id')
+    .maybeSingle();
+  if (error || !data) throw new JobNotificationEventDataError();
+}
+
 export async function recordJobNotificationEventFailure(
   event: Pick<JobNotificationEvent, 'id' | 'attemptCount'>,
   errorClassification: JobNotificationErrorClassification,

@@ -24,6 +24,7 @@ vi.mock('@/features/profiles/server/supabase', () => ({
 import {
   claimJobNotificationEventDelivery,
   createNewEligibleJobNotificationEvents,
+  markJobNotificationEventSkipped,
 } from './job-notification-events';
 import { priorityForDeterministicScore } from '@/features/job-notifications/types';
 
@@ -122,5 +123,22 @@ describe('createNewEligibleJobNotificationEvents', () => {
     ).resolves.toMatchObject({ attemptCount: 1, channel: 'telegram' });
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ attempt_count: 1 }));
     expect(chain.is).toHaveBeenCalledWith('last_attempt_at', null);
+  });
+  it('atomically finalizes a claimed undeliverable event without changing a newer lease', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: { id: 'event-1' }, error: null });
+    const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+    chain.select = vi.fn().mockReturnValue({ maybeSingle });
+    chain.eq = vi.fn().mockReturnValue(chain);
+    const update = vi.fn().mockReturnValue(chain);
+    deps.from.mockReturnValue({ update });
+
+    await expect(
+      markJobNotificationEventSkipped({ id: 'event-1', attemptCount: 1 }),
+    ).resolves.toBeUndefined();
+
+    expect(update).toHaveBeenCalledWith({ status: 'skipped', error_classification: null });
+    expect(chain.eq).toHaveBeenCalledWith('id', 'event-1');
+    expect(chain.eq).toHaveBeenCalledWith('status', 'pending');
+    expect(chain.eq).toHaveBeenCalledWith('attempt_count', 1);
   });
 });

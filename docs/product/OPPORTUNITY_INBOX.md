@@ -10,4 +10,4 @@ Priority bands are deterministic: Excellent is score 80 or above, Good is 70–7
 
 Cards show compact persisted metadata, deterministic evidence and warnings, recency, links to the existing evaluation view and source, plus actions that reuse the authorized job-decision server action. The explanation uses only matcher evidence: matched required/preferred skills and positive seniority/work-model matches.
 
-Telegram delivery remains unchanged except for its RolePilot deep link: eligible-job messages point to the selected profile's Inbox instead of the generic evaluation view. Source links remain intact.
+Telegram delivery remains unchanged except for its RolePilot deep link: eligible-job messages point to the selected profile's opportunity detail (`/opportunities/[jobId]?profileId=…`). Source links remain intact.

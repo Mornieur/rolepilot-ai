@@ -7,6 +7,7 @@ const deps = vi.hoisted(() => ({
   company: vi.fn(),
   send: vi.fn(),
   delivered: vi.fn(),
+  skipped: vi.fn(),
   failed: vi.fn(),
 }));
 vi.mock('server-only', () => ({}));
@@ -14,6 +15,7 @@ vi.mock('@/features/job-notifications/server/job-notification-events', () => ({
   listPendingJobNotificationEvents: deps.list,
   claimJobNotificationEventDelivery: deps.claim,
   markJobNotificationEventDelivered: deps.delivered,
+  markJobNotificationEventSkipped: deps.skipped,
   recordJobNotificationEventFailure: deps.failed,
 }));
 vi.mock('@/features/jobs/server/persisted-jobs', () => ({ getPersistedJobById: deps.job }));
@@ -60,6 +62,7 @@ describe('deliverPendingNotifications', () => {
     deps.company.mockReset().mockResolvedValue({ name: 'Acme' });
     deps.send.mockReset().mockResolvedValue(undefined);
     deps.delivered.mockReset().mockResolvedValue(undefined);
+    deps.skipped.mockReset().mockResolvedValue(undefined);
     deps.failed.mockReset().mockResolvedValue(undefined);
   });
   it('delivers one pending event and records it', async () => {
@@ -97,6 +100,75 @@ describe('deliverPendingNotifications', () => {
       attempted: 0,
     });
     expect(deps.send).not.toHaveBeenCalled();
+  });
+  it('terminally skips a missing job without sending Telegram', async () => {
+    deps.job.mockResolvedValue(null);
+    await expect(deliverPendingNotifications()).resolves.toEqual({
+      attempted: 0,
+      delivered: 0,
+      failed: 0,
+      skipped: 1,
+    });
+    expect(deps.skipped).toHaveBeenCalledWith(expect.objectContaining({ attemptCount: 1 }));
+    expect(deps.send).not.toHaveBeenCalled();
+  });
+  it('terminally skips an inactive job after claiming its lease', async () => {
+    deps.job.mockResolvedValue({ ...job, isActive: false });
+    await expect(deliverPendingNotifications()).resolves.toMatchObject({
+      attempted: 0,
+      delivered: 0,
+      failed: 0,
+      skipped: 1,
+    });
+    expect(deps.claim).toHaveBeenCalledWith(event);
+    expect(deps.skipped).toHaveBeenCalledWith(expect.objectContaining({ attemptCount: 1 }));
+    expect(deps.send).not.toHaveBeenCalled();
+  });
+  it('keeps an inactive event retryable when its terminal update cannot persist', async () => {
+    deps.job.mockResolvedValue({ ...job, isActive: false });
+    deps.skipped.mockRejectedValueOnce(new Error('database unavailable'));
+    await expect(deliverPendingNotifications()).resolves.toMatchObject({
+      attempted: 0,
+      delivered: 0,
+      failed: 1,
+      skipped: 0,
+    });
+    expect(deps.failed).toHaveBeenCalledWith(
+      expect.objectContaining({ attemptCount: 1 }),
+      'persistence_failure',
+    );
+    expect(deps.send).not.toHaveBeenCalled();
+  });
+  it('is idempotent after an undeliverable event is terminally skipped', async () => {
+    deps.job.mockResolvedValue({ ...job, isActive: false });
+    deps.list.mockResolvedValueOnce([event]).mockResolvedValueOnce([]);
+    await deliverPendingNotifications();
+    await deliverPendingNotifications();
+    expect(deps.skipped).toHaveBeenCalledTimes(1);
+    expect(deps.claim).toHaveBeenCalledTimes(1);
+    expect(deps.send).not.toHaveBeenCalled();
+  });
+  it('lets a later valid batch advance after twenty undeliverable events', async () => {
+    const blocked = Array.from({ length: notificationDeliveryBatchLimit }, (_, index) => ({
+      ...event,
+      id: `event-blocked-${index}`,
+      jobId: `job-blocked-${index}`,
+    }));
+    const later = { ...event, id: 'event-later', jobId: 'job-later' };
+    deps.list.mockResolvedValueOnce(blocked).mockResolvedValueOnce([later]);
+    deps.job.mockImplementation(async (jobId) =>
+      jobId === 'job-later' ? { ...job, id: jobId } : { ...job, id: jobId, isActive: false },
+    );
+    await expect(deliverPendingNotifications()).resolves.toMatchObject({
+      skipped: notificationDeliveryBatchLimit,
+      delivered: 0,
+    });
+    await expect(deliverPendingNotifications()).resolves.toMatchObject({
+      delivered: 1,
+      skipped: 0,
+    });
+    expect(deps.skipped).toHaveBeenCalledTimes(notificationDeliveryBatchLimit);
+    expect(deps.send).toHaveBeenCalledTimes(1);
   });
   it('records a final failure from the third attempt without blocking later events', async () => {
     const finalAttempt = { ...event, id: 'event-final', attemptCount: 2 };

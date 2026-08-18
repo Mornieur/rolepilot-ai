@@ -19,17 +19,23 @@ export function NotificationDiagnosticsDashboard({
         Visão administrativa da outbox e do canal Telegram. Credenciais e identificadores não são
         exibidos.
       </p>
-      <dl className="mt-5 grid gap-4 sm:grid-cols-4">
+      <dl className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div>
           <dt className="text-sm text-slate-600 dark:text-slate-300">Telegram</dt>
           <dd className="font-semibold">
             {diagnostics.telegramConfigured ? 'Configurado' : 'Não configurado'}
           </dd>
         </div>
-        {(['pending', 'delivered', 'failed'] as const).map((status) => (
+        {(['pending', 'delivered', 'failed', 'skipped'] as const).map((status) => (
           <div key={status}>
             <dt className="text-sm text-slate-600 dark:text-slate-300">
-              {status === 'pending' ? 'Pendentes' : status === 'delivered' ? 'Entregues' : 'Falhos'}
+              {status === 'pending'
+                ? 'Pendentes'
+                : status === 'delivered'
+                  ? 'Entregues'
+                  : status === 'failed'
+                    ? 'Falhos'
+                    : 'Não entregáveis'}
             </dt>
             <dd className="text-lg font-semibold">{diagnostics.counts[status]}</dd>
           </div>

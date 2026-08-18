@@ -8,6 +8,7 @@ import {
   claimJobNotificationEventDelivery,
   listPendingJobNotificationEvents,
   markJobNotificationEventDelivered,
+  markJobNotificationEventSkipped,
   recordJobNotificationEventFailure,
 } from '@/features/job-notifications/server/job-notification-events';
 
@@ -23,13 +24,7 @@ export async function deliverPendingNotifications(): Promise<NotificationDeliver
   const result: NotificationDeliveryResult = { attempted: 0, delivered: 0, failed: 0, skipped: 0 };
   const events = await listPendingJobNotificationEvents(notificationDeliveryBatchLimit);
   for (const event of events) {
-    const job = await getPersistedJobById(event.jobId).catch(() => null);
-    if (
-      !job ||
-      !job.isActive ||
-      event.eventType !== 'new_eligible_job' ||
-      event.status !== 'pending'
-    ) {
+    if (event.eventType !== 'new_eligible_job' || event.status !== 'pending') {
       result.skipped += 1;
       continue;
     }
@@ -38,8 +33,19 @@ export async function deliverPendingNotifications(): Promise<NotificationDeliver
       result.skipped += 1;
       continue;
     }
-    result.attempted += 1;
+
+    let job;
     try {
+      // Re-read after the lease is acquired so a job that closes while a
+      // worker is waiting cannot be delivered by that worker.
+      job = await getPersistedJobById(claimed.jobId);
+      if (!job || !job.isActive) {
+        await markJobNotificationEventSkipped(claimed);
+        result.skipped += 1;
+        continue;
+      }
+
+      result.attempted += 1;
       const company = await getTargetCompanyById(job.targetCompanyId).catch(() => null);
       await sendTelegramMessage({
         chatId: process.env.TELEGRAM_CHAT_ID ?? '',
