@@ -79,6 +79,7 @@ export function logOpportunityResearch(input: {
   attempt?: number;
   issues?: { path: string; code: string; expected?: string; actual: string }[];
   normalizationCounts?: Partial<Record<'companyCategoryLabel' | 'preparationTopic', number>>;
+  researchContractVersion?: string;
 }) {
   const entry = {
     event: 'opportunity_research',
@@ -110,6 +111,9 @@ export function logOpportunityResearch(input: {
     ...(input.issues ? { issues: input.issues } : {}),
     ...(input.normalizationCounts && Object.keys(input.normalizationCounts).length
       ? { normalization_counts: input.normalizationCounts }
+      : {}),
+    ...(input.researchContractVersion
+      ? { research_contract_version: input.researchContractVersion }
       : {}),
   };
   (input.outcome === 'failed' ? console.error : console.info)(JSON.stringify(entry));

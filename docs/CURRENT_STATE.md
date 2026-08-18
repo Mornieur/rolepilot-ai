@@ -74,6 +74,8 @@ material normalizado da fonte muda. A renovação de `last_seen_at` e a manuten�
 reativação de ciclo de vida são persistidas, mas contam como “sem alteração” quando o
 conteúdo da vaga é o mesmo.
 
+Opportunity Intelligence reliability adds atomic completion through local-only migration `202608180001_atomic_opportunity_research_persistence.sql`: dossier and sources commit together, and source-less/malformed/expired/contract-incompatible entries are normal cache misses. The cache fingerprint now includes centralized research contract component versions and resolved Gemini model; that same one model is persisted as `synthesis_model` for both sequential Gemini calls. The migration has not been applied remotely.
+
 # Admin matching diagnostics
 
 ## Opportunity Intelligence V1

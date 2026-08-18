@@ -289,6 +289,20 @@ export type Database = {
         Args: { p_trigger: string; p_stale_before: string };
         Returns: { run_id: string | null; acquired: boolean }[];
       };
+      persist_completed_opportunity_research_dossier: {
+        Args: {
+          p_profile_id: string;
+          p_job_id: string;
+          p_schema_version: string;
+          p_research_fingerprint: string;
+          p_structured_result: unknown;
+          p_synthesis_model: string;
+          p_researched_at: string;
+          p_expires_at: string;
+          p_sources: unknown;
+        };
+        Returns: OpportunityResearchDossierRow;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

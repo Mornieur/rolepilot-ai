@@ -1,5 +1,9 @@
 import 'server-only';
-import { opportunityDossierSchema } from '@/features/opportunity-intelligence/schema';
+import {
+  hasOnlyKnownDossierCitations,
+  opportunityDossierSchema,
+} from '@/features/opportunity-intelligence/schema';
+import { z } from 'zod';
 import type { ResearchDossier, ResearchSource } from '@/features/opportunity-intelligence/types';
 import { getSupabaseServerClient } from '@/features/profiles/server/supabase';
 import type {
@@ -14,6 +18,8 @@ export class OpportunityResearchDataError extends Error {
   }
 }
 function source(row: OpportunityResearchSourceRow): ResearchSource {
+  const parsed = researchSourceRowSchema.safeParse(row);
+  if (!parsed.success) throw new OpportunityResearchDataError('cache_read');
   return {
     id: row.id,
     tier: row.tier as 1 | 2 | 3,
@@ -29,12 +35,36 @@ function source(row: OpportunityResearchSourceRow): ResearchSource {
     evidenceClassification: row.evidence_classification as ResearchSource['evidenceClassification'],
   };
 }
-function dossier(row: OpportunityResearchDossierRow, sources: ResearchSource[]): ResearchDossier {
+
+const researchSourceRowSchema = z.object({
+  id: z.string().uuid(),
+  tier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  source_kind: z.string().trim().min(1),
+  title: z.string().trim().min(1),
+  organization: z.string().nullable(),
+  domain: z.string().trim().min(1),
+  url: z.string().url(),
+  published_at: z.string().nullable(),
+  collected_at: z.string(),
+  evidence_scopes: z.array(z.string()).nullable(),
+  normalized_excerpt: z.string().max(6000),
+  evidence_classification: z.enum(['known', 'likely', 'anecdotal', 'unknown']),
+});
+function dossier(
+  row: OpportunityResearchDossierRow,
+  sources: ResearchSource[],
+): ResearchDossier | null {
   const parsed = row.structured_result
     ? opportunityDossierSchema.safeParse(row.structured_result)
     : null;
-  if (row.status === 'completed' && (!parsed || !parsed.success))
-    throw new OpportunityResearchDataError('cache_read');
+  if (
+    row.status === 'completed' &&
+    (!parsed ||
+      !parsed.success ||
+      sources.length === 0 ||
+      !hasOnlyKnownDossierCitations(parsed.data, new Set(sources.map((item) => item.id))))
+  )
+    return null;
   return {
     id: row.id,
     profileId: row.profile_id,
@@ -66,52 +96,48 @@ export async function getLatestResearchDossier(profileId: string, jobId: string)
     .select('*')
     .eq('dossier_id', data.id);
   if (sourceError) throw new OpportunityResearchDataError('cache_read');
-  return dossier(data, (sourceRows ?? []).map(source));
+  try {
+    return dossier(data, (sourceRows ?? []).map(source));
+  } catch (error) {
+    if (error instanceof OpportunityResearchDataError) return null;
+    throw error;
+  }
 }
 export async function persistCompletedDossier(
-  input: Omit<ResearchDossier, 'id' | 'status' | 'sources'> & {
+  input: Omit<ResearchDossier, 'id' | 'status' | 'sources' | 'researchedAt' | 'expiresAt'> & {
     sources: Omit<ResearchSource, 'collectedAt'>[];
+    synthesisModel: string;
+    researchedAt: string;
+    expiresAt: string;
   },
 ) {
   const client = getSupabaseServerClient();
-  const { data, error } = await client
-    .from('opportunity_research_dossiers')
-    .insert({
-      profile_id: input.profileId,
-      job_id: input.jobId,
-      schema_version: input.schemaVersion,
-      status: 'completed',
-      research_fingerprint: input.researchFingerprint,
-      structured_result: input.structuredResult,
-      research_provider: 'tavily',
-      synthesis_provider: 'gemini',
-      synthesis_model: null,
-      researched_at: input.researchedAt,
-      expires_at: input.expiresAt,
-      error_classification: null,
-    })
-    .select()
-    .single();
+  const { data, error } = await client.rpc('persist_completed_opportunity_research_dossier', {
+    p_profile_id: input.profileId,
+    p_job_id: input.jobId,
+    p_schema_version: input.schemaVersion,
+    p_research_fingerprint: input.researchFingerprint,
+    p_structured_result: input.structuredResult,
+    p_synthesis_model: input.synthesisModel,
+    p_researched_at: input.researchedAt,
+    p_expires_at: input.expiresAt,
+    p_sources: input.sources.map((item) => ({
+      id: item.id,
+      tier: item.tier,
+      source_kind: item.sourceKind,
+      title: item.title,
+      organization: item.organization,
+      domain: item.domain,
+      url: item.url,
+      published_at: item.publishedAt,
+      evidence_scopes: item.evidenceScopes,
+      normalized_excerpt: item.normalizedExcerpt,
+      evidence_classification: item.evidenceClassification,
+    })),
+  });
   if (error || !data) throw new OpportunityResearchDataError('dossier_persistence');
-  const { data: rows, error: sourceError } = await client
-    .from('opportunity_research_sources')
-    .insert(
-      input.sources.map((item) => ({
-        id: item.id,
-        dossier_id: data.id,
-        tier: item.tier,
-        source_kind: item.sourceKind,
-        title: item.title,
-        organization: item.organization,
-        domain: item.domain,
-        url: item.url,
-        published_at: item.publishedAt,
-        evidence_scopes: item.evidenceScopes,
-        normalized_excerpt: item.normalizedExcerpt,
-        evidence_classification: item.evidenceClassification,
-      })),
-    )
-    .select();
-  if (sourceError) throw new OpportunityResearchDataError('source_persistence');
-  return dossier(data, (rows ?? []).map(source));
+  const sources = input.sources.map((item) => ({ ...item, collectedAt: input.researchedAt }));
+  const persisted = dossier(data, sources);
+  if (!persisted) throw new OpportunityResearchDataError('dossier_persistence');
+  return persisted;
 }

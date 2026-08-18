@@ -28,6 +28,10 @@ import {
 } from '@/features/opportunity-intelligence/schema';
 import type { ResearchDossier, ResearchSource } from '@/features/opportunity-intelligence/types';
 import { resolveGeminiModel } from '@/features/ai-job-analysis/analyze-job';
+import {
+  OPPORTUNITY_RESEARCH_CONTRACT_VERSION,
+  opportunityResearchContractVersions,
+} from './contract';
 import { sanitizeEvidenceText, selectResearchSources, sourceClassification } from './evidence';
 import {
   createOpportunityResearchExecutionId,
@@ -42,7 +46,6 @@ import {
 } from './provider';
 import { tavilyResearchProvider } from './tavily';
 
-export const RESEARCH_STRATEGY_VERSION = '2';
 export const MAX_TAVILY_SEARCHES = 6;
 export const MAX_SELECTED_SOURCES = 10;
 export const MAX_GEMINI_CALLS = 2;
@@ -54,9 +57,11 @@ export class OpportunityResearchError extends Error {
   }
 }
 
-function fingerprint(
+export function opportunityResearchFingerprint(
   profile: Awaited<ReturnType<typeof getCandidateProfileById>>,
   job: Awaited<ReturnType<typeof getPersistedJobById>>,
+  model: string,
+  contract = opportunityResearchContractVersions(model),
 ) {
   return createHash('sha256')
     .update(
@@ -75,8 +80,7 @@ function fingerprint(
           location: job.location,
           sourceUpdatedAt: job.sourceUpdatedAt,
         },
-        schema: OPPORTUNITY_DOSSIER_SCHEMA_VERSION,
-        strategy: RESEARCH_STRATEGY_VERSION,
+        contract,
       }),
     )
     .digest('hex');
@@ -287,7 +291,9 @@ export async function researchOpportunity(
       durationMs: Date.now() - dataStartedAt,
     });
 
-    const researchFingerprint = fingerprint(profile, job);
+    // Both sequential Gemini syntheses deliberately receive this one resolved model.
+    geminiModel = resolveGeminiModel();
+    const researchFingerprint = opportunityResearchFingerprint(profile, job, geminiModel);
     activeStage = 'cache';
     let cached: ResearchDossier | null;
     try {
@@ -297,11 +303,20 @@ export async function researchOpportunity(
     }
     if (
       cached?.status === 'completed' &&
+      cached.structuredResult !== null &&
+      cached.sources.length > 0 &&
       cached.researchFingerprint === researchFingerprint &&
       cached.expiresAt &&
       new Date(cached.expiresAt) > new Date()
     ) {
-      logOpportunityResearch({ execution, stage: 'cache', outcome: 'success', cache: 'hit' });
+      logOpportunityResearch({
+        execution,
+        stage: 'cache',
+        outcome: 'success',
+        cache: 'hit',
+        researchContractVersion: OPPORTUNITY_RESEARCH_CONTRACT_VERSION,
+        model: geminiModel,
+      });
       logOpportunityResearch({
         execution,
         stage: 'pipeline',
@@ -310,7 +325,14 @@ export async function researchOpportunity(
       });
       return cached;
     }
-    logOpportunityResearch({ execution, stage: 'cache', outcome: 'success', cache: 'miss' });
+    logOpportunityResearch({
+      execution,
+      stage: 'cache',
+      outcome: 'success',
+      cache: 'miss',
+      researchContractVersion: OPPORTUNITY_RESEARCH_CONTRACT_VERSION,
+      model: geminiModel,
+    });
 
     activeStage = 'company_load';
     const companyStartedAt = Date.now();
@@ -480,7 +502,6 @@ export async function researchOpportunity(
     if (!process.env.GEMINI_API_KEY) throw new OpportunityResearchError('gemini_configuration');
     logOpportunityResearch({ execution, stage: 'gemini_config', outcome: 'success' });
     activeStage = 'gemini_company';
-    geminiModel = resolveGeminiModel();
     const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     let companyResponse: Awaited<ReturnType<GoogleGenAI['models']['generateContent']>>;
     try {
@@ -599,8 +620,15 @@ export async function researchOpportunity(
         expiresAt: expiresAt(),
         errorClassification: null,
         sources,
+        synthesisModel: geminiModel,
       });
-      logOpportunityResearch({ execution, stage: 'dossier_persistence', outcome: 'success' });
+      logOpportunityResearch({
+        execution,
+        stage: 'dossier_persistence',
+        outcome: 'success',
+        model: geminiModel,
+        researchContractVersion: OPPORTUNITY_RESEARCH_CONTRACT_VERSION,
+      });
       logOpportunityResearch({
         execution,
         stage: 'source_persistence',
